@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Simulasi Tes Potensi Dasar — PCPM Bank Indonesia</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --ink:#1b2436;
+  --ink-soft:#2c3752;
+  --paper:#eeeae0;
+  --paper-alt:#f8f6ef;
+  --brass:#a1792d;
+  --brass-light:#cda653;
+  --correct:#2f6e4f;
+  --incorrect:#a13d3d;
+  --muted:#6b6558;
+  --line:rgba(27,36,54,0.16);
+  --shadow:0 10px 28px rgba(27,36,54,0.14);
+  --radius:7px;
+  --serif:'Spectral', Georgia, serif;
+  --sans:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --mono:'IBM Plex Mono', 'Courier New', monospace;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background:
+    radial-gradient(ellipse at top left, rgba(161,121,45,0.06), transparent 55%),
+    var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+#app{ max-width:880px; margin:0 auto; padding:0 0 64px; }
+b{ font-weight:600; }
+p{ margin:0 0 12px; }
+button{ font-family:inherit; cursor:pointer; }
+button:focus-visible, .recap-top:focus-visible{ outline:3px solid var(--brass-light); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+
+/* ---------- ticket header ---------- */
+.ticket{
+  background:linear-gradient(180deg, var(--ink) 0%, var(--ink-soft) 100%);
+  color:var(--paper-alt);
+  padding:28px 24px 22px;
+  border-bottom:4px solid var(--brass);
+  margin-bottom:20px;
+}
+.ticket-eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+  color:var(--brass-light); margin-bottom:8px; font-weight:600;
+}
+.ticket-title{
+  font-family:var(--serif); font-weight:600; font-size:clamp(24px,4vw,34px);
+  margin:0 0 6px;
+}
+.ticket-sub{ color:#c9c4b6; font-size:14.5px; }
+
+/* ---------- generic card ---------- */
+.card{
+  background:var(--paper-alt);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:20px 22px;
+  margin:0 16px 18px;
+}
+.intro p{ margin-bottom:14px; }
+.legend-row{ display:flex; flex-wrap:wrap; gap:14px; font-size:13px; }
+.legend-item{ display:flex; align-items:center; gap:6px; color:var(--muted); }
+
+/* ---------- stamps ---------- */
+.stamp{
+  display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700;
+  letter-spacing:.06em; text-transform:uppercase; padding:3px 8px;
+  border:1.5px solid currentColor; border-radius:3px; transform:rotate(-2deg);
+  white-space:nowrap;
+}
+.stamp-good{ color:var(--correct); }
+.stamp-warn{ color:var(--brass); }
+.stamp-bad{ color:var(--incorrect); }
+.stamp-neutral{ color:var(--muted); border-style:dashed; }
+
+/* ---------- subtest grid / ledger cards ---------- */
+.subtest-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 16px;
+}
+@media (max-width:640px){ .subtest-grid{ grid-template-columns:1fr; } }
+.ledger-card{
+  background:var(--paper-alt); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:18px 18px 14px; display:flex; flex-direction:column;
+}
+.ledger-head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.glyph{
+  font-size:22px; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;
+  background:var(--ink); color:var(--brass-light); border-radius:6px;
+}
+.ledger-title{ font-family:var(--serif); font-weight:600; font-size:17px; }
+.ledger-sub{ font-size:12.5px; color:var(--muted); }
+.ledger-spec{ margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--muted); text-align:right; }
+.tier-rows{ border-top:1px dashed var(--line); padding-top:10px; display:flex; flex-direction:column; gap:9px; }
+.tier-row{ display:grid; grid-template-columns:64px 1fr auto auto; align-items:center; gap:8px; }
+.tier-row-locked{ opacity:0.55; }
+.btn-mini-disabled{ background:var(--muted) !important; cursor:not-allowed; }
+.tier-name{ font-size:13px; font-weight:600; }
+.tier-stat{ font-size:11.5px; }
+.btn-mini{
+  background:var(--ink); color:var(--paper-alt); border:none; border-radius:5px;
+  padding:6px 12px; font-size:12.5px; font-weight:600;
+}
+.btn-mini:hover{ background:var(--brass); }
+
+.home-footer{ padding:8px 16px 0; }
+.link-btn{ background:none; border:none; color:var(--incorrect); font-size:12.5px; text-decoration:underline; padding:0; }
+.muted{ color:var(--muted); }
+.small{ font-size:12.5px; }
+
+.backup-card{ background:rgba(161,121,45,0.06); border-color:var(--brass-light); }
+.backup-code{
+  width:100%; font-family:var(--mono); font-size:12px; padding:8px 10px; border:1px solid var(--line);
+  border-radius:6px; background:var(--paper-alt); resize:vertical; color:var(--ink-soft);
+}
+.err-text{ color:var(--incorrect); font-weight:600; }
+
+/* ---------- instructions ---------- */
+.instructions h2{ font-family:var(--serif); font-size:22px; margin:2px 0 12px; }
+.trick-box{
+  background:rgba(161,121,45,0.09); border:1px solid var(--brass-light);
+  border-radius:6px; padding:12px 14px; font-size:14px; margin:14px 0;
+}
+.trick-box.small{ font-size:12.5px; padding:10px 12px; margin-top:8px; }
+.btn-row{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.btn-primary{
+  background:var(--brass); color:#fff; border:none; border-radius:6px;
+  padding:11px 18px; font-weight:700; font-size:14px;
+}
+.btn-primary:hover{ background:#8f6a26; }
+.btn-ghost{
+  background:none; border:1.5px solid var(--line); color:var(--ink); border-radius:6px;
+  padding:10px 16px; font-weight:600; font-size:14px;
+}
+.btn-ghost:hover{ border-color:var(--ink); }
+
+/* ---------- runner ---------- */
+.run-bar{
+  position:sticky; top:0; z-index:5; display:flex; align-items:center; justify-content:space-between;
+  background:var(--ink); color:var(--paper-alt); padding:12px 18px; margin:0 16px 14px; border-radius:var(--radius);
+  border-bottom:3px solid var(--brass);
+}
+.run-bar-left{ display:flex; align-items:center; gap:10px; }
+.run-subtest{ font-family:var(--serif); font-weight:600; }
+.run-tier.badge{
+  font-family:var(--mono); font-size:10.5px; border:1px solid var(--brass-light); color:var(--brass-light);
+  padding:2px 7px; border-radius:4px; letter-spacing:.05em;
+}
+.run-timer{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:.02em; }
+.timer-danger{ color:#e08585; animation:pulse 1s infinite; }
+@keyframes pulse{ 50%{ opacity:.45; } }
+
+.run-body{ min-height:260px; }
+.q-instr{ margin-bottom:10px; }
+
+.option-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.option-row-wrap .opt-btn{ min-width:52px; }
+.opt-btn{
+  background:var(--paper); border:1.5px solid var(--line); border-radius:6px;
+  padding:11px 16px; font-size:15px; font-weight:600; color:var(--ink);
+}
+.opt-btn:hover{ border-color:var(--brass); background:#fff; }
+.opt-btn-mono{ font-family:var(--mono); font-size:18px; }
+.opt-btn-wide{ flex:1 1 140px; text-align:center; }
+
+/* digit symbol */
+.legend-label{ margin-bottom:6px; letter-spacing:.08em; }
+.digit-legend{ display:flex; flex-wrap:wrap; gap:10px; padding:10px; background:var(--paper); border-radius:6px; margin-bottom:18px; }
+.digit-pair{ display:flex; flex-direction:column; align-items:center; width:44px; font-family:var(--mono); }
+.digit-num{ font-size:12px; color:var(--muted); margin-bottom:2px; }
+.digit-sym-box{ width:32px; height:32px; }
+.digit-prompt{ text-align:center; padding:14px 0 4px; }
+.digit-prompt-shape{ display:flex; justify-content:center; padding:10px 0 6px; }
+.digit-big{ font-family:var(--mono); font-size:52px; font-weight:700; margin-top:4px; }
+.inline-shape{ display:inline-flex; vertical-align:middle; margin:0 2px; }
+
+/* numerical */
+.num-grid{ border-collapse:collapse; margin:10px auto 4px; }
+.num-grid td{
+  border:1px solid var(--line); width:64px; height:56px; text-align:center;
+  font-family:var(--mono); font-size:17px; background:var(--paper);
+}
+.num-grid td.grid-blank{ background:rgba(161,121,45,0.18); color:var(--brass); font-weight:700; font-size:20px; }
+
+/* verbal */
+.verbal-passage{
+  background:var(--paper); border-left:3px solid var(--brass); padding:14px 16px;
+  font-family:var(--serif); font-size:15.5px; border-radius:0 6px 6px 0;
+}
+.arrangement-story{ line-height:1.75; }
+.verbal-statement{ font-weight:600; font-size:15px; margin-top:14px; }
+
+/* diagram */
+.diagram-legend{ display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin:8px 0 18px; }
+.diagram-col{ text-align:center; }
+.diagram-col-label{ font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:8px; letter-spacing:.04em; }
+.shape-box{
+  display:inline-flex; align-items:center; justify-content:center; margin:3px;
+  background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:4px;
+}
+.diagram-target{ text-align:center; margin-bottom:6px; }
+.shape-box-lg{ padding:10px; }
+
+/* ledger strip */
+.ledger-strip{ display:flex; flex-wrap:wrap; gap:4px; padding:0 16px; margin-top:4px; }
+.lcell{
+  width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:10px; border:1px solid var(--line); border-radius:3px; color:var(--muted);
+}
+.lcell-done{ background:var(--ink); color:var(--paper-alt); border-color:var(--ink); }
+.lcell-current{ border-color:var(--brass); border-width:2px; color:var(--brass); font-weight:700; }
+
+/* q-instr used twice: once by runner shell (numbering), once inside body (per-format instruction) */
+.q-instr2{ margin-bottom:10px; }
+
+/* digit verify variant */
+.digit-pair-big{ font-family:var(--mono); font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 0 4px; }
+
+/* number series */
+.series-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:14px 0 4px; }
+.series-num{
+  font-family:var(--mono); font-size:20px; font-weight:600; background:var(--paper);
+  border:1px solid var(--line); border-radius:6px; padding:10px 14px; min-width:22px; text-align:center;
+}
+.series-blank{ background:rgba(161,121,45,0.18); color:var(--brass); border-color:var(--brass-light); font-weight:700; }
+
+/* typed numeric answer (grid / series / analogy) */
+.typed-answer-wrap{ display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+.typed-input{
+  font-family:var(--mono); font-size:20px; font-weight:600; padding:10px 14px; width:160px;
+  border:2px solid var(--brass-light); border-radius:6px; background:var(--paper-alt); color:var(--ink);
+}
+.typed-input:focus{ outline:none; border-color:var(--brass); box-shadow:0 0 0 3px rgba(161,121,45,0.15); }
+.typed-submit{ padding:10px 18px; }
+.typed-review-row{ margin:6px 0; font-size:15px; }
+.typed-review-value{ font-family:var(--mono); font-weight:700; font-size:17px; }
+.text-correct{ color:var(--correct); }
+.text-wrong{ color:var(--incorrect); text-decoration:line-through; text-decoration-thickness:1.5px; }
+
+/* diagram sequence */
+.sequence-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; margin:14px 0 6px; }
+.shape-box-q{
+  width:60px; height:60px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:22px; font-weight:700; color:var(--brass);
+  background:rgba(161,121,45,0.1); border:1.5px dashed var(--brass-light); border-radius:6px;
+}
+.opt-shape{ position:relative; padding:8px 8px 6px; display:flex; flex-direction:column; align-items:center; }
+.opt-letter{
+  font-family:var(--mono); font-size:12px; font-weight:800; color:var(--brass);
+  background:var(--paper-alt); border:1.5px solid var(--brass-light); border-radius:50%;
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center; margin-bottom:4px;
+}
+.opt-shape-svg{ display:flex; }
+.chip-tag{ font-size:10px; margin-top:4px; font-weight:700; letter-spacing:.02em; }
+
+/* review-mode static "options" (non-interactive, shown in recap) */
+.opt-static{
+  display:inline-flex; align-items:center; justify-content:center;
+  border:1.5px solid var(--line); border-radius:6px; padding:10px 14px;
+  font-size:14px; font-weight:600; color:var(--ink); background:var(--paper);
+}
+.chip-correct{ border-color:var(--correct); background:rgba(47,110,79,0.13); color:var(--correct); }
+.chip-wrong{ border-color:var(--incorrect); background:rgba(161,61,61,0.13); color:var(--incorrect); }
+
+/* digit: countMatches / oddOneOut pair list */
+.pair-list{ display:flex; flex-direction:column; gap:6px; margin:10px 0 4px; }
+.pair-item{
+  font-family:var(--mono); font-size:15px; background:var(--paper); border:1px solid var(--line);
+  border-radius:6px; padding:8px 12px; display:flex; align-items:center; gap:8px;
+}
+.pair-mark{ font-weight:700; }
+.mark-good{ color:var(--correct); }
+.mark-bad{ color:var(--incorrect); }
+
+/* diagram: numbered shapes for odd-one-out */
+.shape-numbered{ position:relative; }
+.shape-index{
+  position:absolute; bottom:2px; right:4px; font-family:var(--mono); font-size:10px;
+  font-weight:700; color:var(--muted); background:var(--paper-alt); padding:0 3px; border-radius:3px;
+}
+
+/* diagram: 3x3 matrix */
+.matrix-grid{ display:inline-flex; flex-direction:column; gap:4px; margin:10px auto 6px; }
+.matrix-row{ display:flex; gap:4px; }
+
+/* verbal: syllogism options stacked full-width */
+.syllogism-options{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+.opt-btn-block{ text-align:left; width:100%; }
+.analogy-sep{ font-family:var(--mono); font-size:20px; color:var(--muted); font-weight:700; }
+
+/* results */
+.score-row{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin:10px 0 6px; }
+.score-big{ font-family:var(--mono); font-size:40px; font-weight:700; color:var(--ink); }
+.score-meta{ font-size:13.5px; color:var(--muted); display:flex; flex-direction:column; gap:3px; }
+.mastery-change{ margin:10px 0 4px; font-size:13.5px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+.recap h3{ font-family:var(--serif); font-size:18px; margin:0 0 12px; }
+.recap-item{ border-top:1px solid var(--line); }
+.recap-item:last-child{ border-bottom:1px solid var(--line); }
+.recap-top{
+  display:grid; grid-template-columns:24px 62px 1fr 52px 16px; align-items:center; gap:10px;
+  padding:10px 2px; cursor:pointer;
+}
+.recap-no{ font-family:var(--mono); color:var(--muted); font-size:12.5px; }
+.recap-flag{ font-family:var(--mono); font-size:10.5px; font-weight:700; padding:3px 6px; border-radius:3px; text-align:center; }
+.flag-good{ background:rgba(47,110,79,0.14); color:var(--correct); }
+.flag-bad{ background:rgba(161,61,61,0.12); color:var(--incorrect); }
+.recap-repr{ font-size:13px; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.recap-time{ font-family:var(--mono); text-align:right; }
+.recap-caret{ transition:transform .15s; color:var(--muted); }
+.recap-item.open .recap-caret{ transform:rotate(180deg); }
+.recap-detail{ display:none; padding:0 2px 16px 34px; font-size:13.5px; }
+.recap-item.open .recap-detail{ display:block; }
+.recap-expl{ margin:8px 0; line-height:1.6; }
+
+@media (max-width:520px){
+  .tier-row{ grid-template-columns:56px 1fr; row-gap:4px; }
+  .tier-row .stamp{ grid-column:1/2; }
+  .tier-row .btn-mini{ grid-column:2/3; justify-self:end; }
+  .recap-top{ grid-template-columns:20px 50px 1fr 16px; }
+  .recap-time{ display:none; }
+}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* =========================================================
+   Simulasi Tes Potensi Dasar — PCPM Bank Indonesia
+   Vanilla JS, no framework. All state in memory + window.storage.
+   ========================================================= */
+(function(){
+"use strict";
+
+/* ---------- tiny helpers ---------- */
+function $(sel,root){ return (root||document).querySelector(sel); }
+function $all(sel,root){ return Array.from((root||document).querySelectorAll(sel)); }
+function el(tag, attrs, children){
+  const e = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k==='class') e.className = attrs[k];
+    else if(k==='html') e.innerHTML = attrs[k];
+    else if(k.startsWith('on') && typeof attrs[k]==='function') e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(c=>{ if(c!=null) e.appendChild(typeof c==='string'?document.createTextNode(c):c); });
+  return e;
+}
+function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function fmtTime(ms){
+  const s = Math.max(0, Math.round(ms/1000));
+  const m = Math.floor(s/60), r = s%60;
+  return m+":"+String(r).padStart(2,'0');
+}
+function fmtSec(ms){
+  return (ms/1000).toFixed(1)+"s";
+}
+
+/* ---------- storage (persistent_storage_for_artifacts API, with safe fallback) ---------- */
+const memoryStore = {};
+async function storeGet(key){
+  try{
+    if(window.storage && typeof window.storage.get==='function'){
+      const r = await window.storage.get(key, false);
+      return r ? r.value : null;
+    }
+  }catch(e){ /* key not found or storage unavailable */ }
+  return memoryStore[key] || null;
+}
+async function storeSet(key, value){
+  try{
+    if(window.storage && typeof window.storage.set==='function'){
+      await window.storage.set(key, value, false);
+      return true;
+    }
+  }catch(e){ /* ignore, fall back to memory */ }
+  memoryStore[key] = value;
+  return false;
+}
+
+const TRACK_KEY = 'pcpm-tpd-track-v1';
+async function loadTrack(){
+  const raw = await storeGet(TRACK_KEY);
+  if(!raw) return {};
+  try{ return JSON.parse(raw); }catch(e){ return {}; }
+}
+async function saveTrack(track){
+  await storeSet(TRACK_KEY, JSON.stringify(track));
+}
+function emptyStats(){ return { attempts:0, correct:0, total:0, totalTimeMs:0, history:[] }; }
+function recordAttempt(track, subtestKey, tier, correct, total, totalTimeMs){
+  track[subtestKey] = track[subtestKey] || {};
+  const s = track[subtestKey][tier] = track[subtestKey][tier] || emptyStats();
+  s.attempts += 1;
+  s.correct += correct;
+  s.total += total;
+  s.totalTimeMs += totalTimeMs;
+  s.history.unshift({ ts: Date.now(), correct, total, avgMs: Math.round(totalTimeMs/Math.max(1,total)) });
+  s.history = s.history.slice(0,20);
+  return track;
+}
+function masteryOf(stats){
+  if(!stats || stats.attempts===0) return { label:'Belum Dicoba', tone:'neutral' };
+  const acc = stats.correct/stats.total;
+  if(acc>=0.8) return { label:'Sudah Dikuasai', tone:'good' };
+  if(acc>=0.5) return { label:'Perlu Ditingkatkan', tone:'warn' };
+  return { label:'Masih Sulit', tone:'bad' };
+}
+
+/* =========================================================
+   SUBTEST DEFINITIONS
+   ========================================================= */
+const SUBTESTS = {
+  digit:     { key:'digit',     label:'Digit Symbol',            sub:'Decode Urutan Ikon',   count:36, minutes:7,   glyph:'▤' },
+  numerical: { key:'numerical', label:'Numerical Reasoning',     sub:'Pola Angka (Tabel)',  count:10, minutes:10,  glyph:'▦' },
+  verbal:    { key:'verbal',    label:'Verbal Reasoning',        sub:'Penalaran Bacaan',    count:10, minutes:12,  glyph:'✎' },
+  diagram:   { key:'diagram',   label:'Diagrammatical Reasoning',sub:'Pola Gambar',         count:10, minutes:7.5, glyph:'◈' },
+  spatial:   { key:'spatial',   label:'Spatial Reasoning',       sub:'Rotasi & Cermin — prediksi subtes baru PCPM 41', count:10, minutes:15, glyph:'⟲' }
+};
+const TIERS = [
+  { key:'low',    label:'Low',    sub:'Dasar' },
+  { key:'medium', label:'Medium', sub:'Menengah' },
+  { key:'high',   label:'High',   sub:'Tingkat Lanjut' },
+  { key:'hyper',  label:'Hyper',  sub:'Ekstrem — terkunci sampai High dikuasai' }
+];
+
+/* =========================================================
+   GENERATOR: DIGIT SYMBOL
+   ========================================================= */
+/* =========================================================
+   GENERATOR: DIGIT SYMBOL (sequence-decode, verified against
+   real PCPM material: a key of 10 letters A-J maps to 10 icons;
+   each question shows a SEQUENCE of icons (no letters) and you
+   pick the matching letter-string from MCQ options.
+   ========================================================= */
+const LETTERS10 = ['A','B','C','D','E','F','G','H','I','J'];
+const ICON_TYPES = ['arrowUp','arrowDown','hookCurl','crossX','circleFilled','circleRinged','circleLined','cardSpade','triangleSolid','triangleOutline','triangleDown','shieldSolid','zigzagN','circledLetter','cameraRect','runeY','commaSolid','ariesSymbol','diamondOutline','diamondSolid','starSolid'];
+
+function genLetterIconKey(){
+  const icons = shuffle(ICON_TYPES).slice(0,10);
+  const key = {}; LETTERS10.forEach((l,i)=> key[l]=icons[i]);
+  return key;
+}
+
+function genDigitSymbolTest(tier){
+  const key = genLetterIconKey();
+  const items = [];
+  for(let i=0;i<36;i++) items.push(genSequenceItem(key, tier));
+  return { key, items, tier };
+}
+
+function genSequenceItem(key, tier){
+  const len = tier==='low'?4:(tier==='medium'?5:(tier==='high'?6:8));
+  const seqLetters = shuffle(LETTERS10).slice(0,len);
+  const correct = seqLetters.join('');
+  const nOptions = tier==='low'?4:5;
+  const distractors = [];
+  let guard=0;
+  while(distractors.length<nOptions-1 && guard<80){
+    guard++;
+    const arr = seqLetters.slice();
+    const mode = Math.random()<0.5 ? 'swap':'substitute';
+    if(mode==='swap' && arr.length>=2){
+      const i=randInt(0,arr.length-1); let j=randInt(0,arr.length-1);
+      let g2=0; while(j===i && g2<10){ j=randInt(0,arr.length-1); g2++; }
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    } else {
+      const i=randInt(0,arr.length-1);
+      const pool = LETTERS10.filter(l=>!arr.includes(l));
+      if(pool.length>0) arr[i]=pick(pool);
+      else { const j=randInt(0,arr.length-1); if(j!==i){ [arr[i],arr[j]]=[arr[j],arr[i]]; } }
+    }
+    const cand = arr.join('');
+    if(cand!==correct && !distractors.includes(cand)) distractors.push(cand);
+  }
+  const options = shuffle([correct, ...distractors]);
+  return { seqLetters, seqIcons: seqLetters.map(l=>key[l]), key, correct, options, len };
+}
+
+
+/* =========================================================
+   GENERATOR: NUMERICAL REASONING (grid pattern)
+   ========================================================= */
+function buildDistractors(correct, count){
+  const set = new Set([correct]);
+  const out = [];
+  const deltas = shuffle([1,-1,2,-2,3,-3,4,-4,5,-5,6,-6]);
+  for(const d of deltas){
+    if(out.length>=count) break;
+    const v = correct+d;
+    if(!set.has(v)){ set.add(v); out.push(v); }
+  }
+  let guard=0;
+  while(out.length<count && guard<200){ // hard safety cap, was previously able to loop forever
+    guard++;
+    const v = correct + randInt(7,40)*(Math.random()<0.5?1:-1);
+    if(!set.has(v)){ set.add(v); out.push(v); }
+  }
+  while(out.length<count){ out.push(correct + out.length + 100); } // absolute last-resort filler, never loops
+  return out;
+}
+
+function digitSum(n){ return String(n).split('').reduce((a,c)=>a+Number(c),0); }
+
+function genNumericalItem(tier){
+  const roll = Math.random();
+  if(roll<0.4) return genNumericalGridItem(tier);
+  if(roll<0.65) return genNumericalSeriesItem(tier);
+  if(roll<0.85) return genNumericalOddOneOutItem(tier);
+  return genNumericalAnalogyItem(tier);
+}
+
+function genNumericalOddOneOutItem(tier){
+  let ruleFn, ruleDesc, attempts=0, res=null;
+  const range = tier==='hyper' ? [1000,9999] : (tier==='high' ? [100,999] : [10,99]);
+  while(!res && attempts<12){
+    attempts++;
+    if(tier==='low'){
+      const k = randInt(2,9);
+      ruleFn = n=> n%k===0; ruleDesc = `KELIPATAN ${k}`;
+    } else if(tier==='medium'){
+      const S = randInt(8,13);
+      ruleFn = n=> digitSum(n)===S; ruleDesc = `JUMLAH DIGIT-nya = ${S}`;
+    } else if(tier==='high'){
+      const k = pick([6,7,8,9]);
+      const useSquareFreeish = Math.random()<0.5;
+      if(useSquareFreeish){
+        ruleFn = n=> (n%k===0) && (digitSum(n)%2===0); ruleDesc = `KELIPATAN ${k} DAN jumlah digitnya GENAP`;
+      } else {
+        const S = randInt(14,20);
+        ruleFn = n=> (n%3===0) && (digitSum(n)===S); ruleDesc = `KELIPATAN 3 DAN jumlah digitnya = ${S}`;
+      }
+    } else {
+      const k1 = pick([3,4]); const k2 = pick([5,7]);
+      const S = randInt(16,24);
+      ruleFn = n=> (n%k1===0) && (n%k2!==0) && (digitSum(n)>=S);
+      ruleDesc = `KELIPATAN ${k1}, BUKAN kelipatan ${k2}, DAN jumlah digitnya ≥ ${S}`;
+    }
+    const pool=[], antiPool=[];
+    for(let n=range[0];n<=range[1];n++){ if(ruleFn(n)) pool.push(n); else antiPool.push(n); }
+    if(pool.length>=4 && antiPool.length>=1){
+      const four = shuffle(pool).slice(0,4);
+      const outlier = pick(antiPool);
+      const wrongIdx = randInt(0,4);
+      const nums = four.slice(); nums.splice(wrongIdx,0,outlier);
+      res = { nums, correct: wrongIdx+1, ruleDesc, outlier };
+    }
+  }
+  const explanation = `4 angka lainnya semua memenuhi ciri: ${res.ruleDesc}. Angka di posisi ${res.correct} (yaitu ${res.outlier}) TIDAK memenuhi ciri itu.`;
+  const trick = `Cek pembagian atau jumlah digit dulu di 4 angka yang "mirip". Begitu ciri bersamanya ketemu, cari 1 angka yang menyimpang.`;
+  return { format:'oddOneOut', nums:res.nums, correct:res.correct, options:[1,2,3,4,5], explanation, trick };
+}
+
+function genNumericalAnalogyItem(tier){
+  let f, desc, aRange;
+  if(tier==='low'){ const k=randInt(2,6); f=x=>x*k; desc=`dikalikan ${k}`; aRange=[2,12]; }
+  else if(tier==='medium'){ const k=randInt(2,5), add=randInt(1,9); f=x=>x*k+add; desc=`dikalikan ${k} lalu ditambah ${add}`; aRange=[2,12]; }
+  else if(tier==='high'){
+    const mode = randInt(0,1);
+    if(mode===0){ const k=randInt(3,9); f=x=>x*x-k; desc=`dikuadratkan lalu dikurangi ${k}`; aRange=[4,15]; }
+    else { const k=randInt(3,7), add=randInt(5,20); f=x=>x*x+k*x+add; desc=`dikuadratkan, ditambah ${k}×bilangan itu sendiri, lalu ditambah ${add}`; aRange=[3,9]; }
+  } else {
+    const mode = randInt(0,1);
+    if(mode===0){ const k=randInt(2,4), add=randInt(10,40); f=x=>x*x*k-add; desc=`dikuadratkan, dikalikan ${k}, lalu dikurangi ${add}`; aRange=[4,12]; }
+    else { const k=randInt(2,3); f=x=>x*x*x+k; desc=`dipangkatkan tiga (dikalikan dirinya sendiri dua kali) lalu ditambah ${k}`; aRange=[2,8]; }
+  }
+  let a = randInt(aRange[0],aRange[1]);
+  let c = randInt(aRange[0],aRange[1]);
+  let guard=0; while(c===a && guard<20){ c=randInt(aRange[0],aRange[1]); guard++; }
+  const b = f(a), correct = f(c);
+  const distractors = buildDistractors(correct, tier==='low'?3:(tier==='medium'?4:5));
+  const options = shuffle([correct, ...distractors]);
+  const explanation = `Aturannya: bilangan kedua = bilangan pertama ${desc}. ${a} → ${b}. Maka ${c} → <b>${correct}</b>.`;
+  const trick = `Cari hubungan matematis sederhana dulu (kali/tambah/kuadrat/pangkat) di pasangan pertama, lalu terapkan rumus yang SAMA PERSIS ke pasangan kedua.`;
+  return { format:'analogy', a,b,c, correct, options, explanation, trick };
+}
+
+function genNumericalSeriesItem(tier){
+  let seq, explanation, trick;
+  if(tier==='low'){
+    const start = randInt(2,15), step = randInt(2,9);
+    seq=[start]; for(let i=0;i<5;i++) seq.push(seq[seq.length-1]+step);
+    explanation = `Deret aritmatika sederhana: tiap suku bertambah tetap sebesar <b>${step}</b>. Suku ke-6 = ${seq[4]} + ${step} = <b>${seq[5]}</b>.`;
+    trick = `Hitung selisih 2 suku berurutan pertama. Kalau semua selisihnya sama, tinggal tambahkan selisih itu ke suku terakhir yang diketahui.`;
+  } else if(tier==='medium'){
+    const start = randInt(2,10), step0=randInt(2,5), growth=randInt(1,3);
+    seq=[start]; let curStep=step0;
+    for(let i=0;i<5;i++){ seq.push(seq[seq.length-1]+curStep); curStep+=growth; }
+    explanation = `Selisih antar suku sendiri bertambah tetap: mulai dari +${step0}, lalu +${step0+growth}, +${step0+2*growth}, dst (bertambah <b>${growth}</b> tiap langkah). Suku ke-6 = ${seq[4]} + ${step0+4*growth} = <b>${seq[5]}</b>.`;
+    trick = `Kalau selisih antar suku TIDAK tetap, hitung "selisih dari selisih". Kalau itu konstan, berarti selisihnya sendiri naik teratur — lanjutkan pola itu.`;
+  } else if(tier==='high'){
+    const mode = randInt(0,1);
+    if(mode===0){
+      const a1=randInt(3,12), a2=randInt(a1+3,a1+15);
+      seq=[a1,a2];
+      for(let i=0;i<4;i++) seq.push(seq[seq.length-1]+seq[seq.length-2]);
+      explanation = `Pola Fibonacci: tiap suku = jumlah 2 suku sebelumnya. ${seq[3]} + ${seq[4]} = <b>${seq[5]}</b>.`;
+      trick = `Kalau deret naik semakin cepat dan bukan pola kali/kuadrat biasa, coba jumlahkan 2 suku sebelumnya — banyak soal level tinggi memakai pola Fibonacci.`;
+    } else {
+      const oddStart=randInt(5,20), oddStep=randInt(4,11);
+      const evenStart=randInt(5,20), evenStep=randInt(4,11);
+      seq=[oddStart, evenStart, oddStart+oddStep, evenStart+evenStep, oddStart+2*oddStep, evenStart+2*evenStep];
+      explanation = `Ini dua deret yang diselang-seling. Posisi ganjil (1,3,5,...): ${oddStart}, ${oddStart+oddStep}, ${oddStart+2*oddStep} (naik ${oddStep}). Posisi genap (2,4,6,...): ${evenStart}, ${evenStart+evenStep}, lalu suku ke-6 = ${evenStart+evenStep} + ${evenStep} = <b>${seq[5]}</b>.`;
+      trick = `Kalau naik-turunnya "tidak konsisten" antar suku berdekatan, coba pisahkan jadi 2 deret: ambil suku ke 1,3,5,... jadi satu deret, dan 2,4,6,... jadi deret lain.`;
+    }
+  } else {
+    const mode = randInt(0,2);
+    if(mode===0){
+      const a1=randInt(5,20), a2=randInt(a1+5,a1+25);
+      seq=[a1,a2];
+      for(let i=0;i<4;i++) seq.push(seq[seq.length-1]+seq[seq.length-2]);
+      explanation = `Pola Fibonacci (angka lebih besar): tiap suku = jumlah 2 suku sebelumnya. ${seq[3]} + ${seq[4]} = <b>${seq[5]}</b>.`;
+      trick = `Kalau deret naik sangat cepat dan bukan pola kali/kuadrat biasa, coba jumlahkan 2 suku sebelumnya.`;
+    } else if(mode===1){
+      const oddStart=randInt(10,40), oddStep=randInt(8,20);
+      const evenStart=randInt(10,40), evenStep=randInt(8,20);
+      seq=[oddStart, evenStart, oddStart+oddStep, evenStart+evenStep, oddStart+2*oddStep, evenStart+2*evenStep];
+      explanation = `Dua deret diselang-seling dengan angka besar. Posisi ganjil: ${oddStart}, ${oddStart+oddStep}, ${oddStart+2*oddStep} (naik ${oddStep}). Posisi genap: ${evenStart}, ${evenStart+evenStep}, lalu suku ke-6 = ${evenStart+evenStep} + ${evenStep} = <b>${seq[5]}</b>.`;
+      trick = `Pisahkan jadi 2 deret (ganjil & genap), masing-masing biasanya pola sederhana meski gabungannya terlihat acak.`;
+    } else {
+      const oddStart=randInt(4,10), oddStep0=randInt(3,6), oddGrowth=randInt(1,3);
+      const evenStart=randInt(6,15), evenStep=randInt(5,12);
+      const o1=oddStart, o2=oddStart+oddStep0, o3=o2+(oddStep0+oddGrowth);
+      const e1=evenStart, e2=evenStart+evenStep;
+      seq=[o1, e1, o2, e2, o3, e2+evenStep];
+      explanation = `Gabungan dua pola: posisi ganjil (1,3,5) punya selisih yang TUMBUH (+${oddStep0}, lalu +${oddStep0+oddGrowth}), sementara posisi genap (2,4,6) selisihnya tetap +${evenStep}. Suku ke-6 (posisi genap) = ${e2} + ${evenStep} = <b>${seq[5]}</b>.`;
+      trick = `Pisahkan ganjil-genap dulu seperti biasa — tapi di level ini, salah satu jalurnya sendiri punya pola berlapis (selisihnya tumbuh), bukan sekadar tetap.`;
+    }
+  }
+  const shown = seq.slice(0,5);
+  const correct = seq[5];
+  const distractors = buildDistractors(correct, tier==='low'?3:(tier==='medium'?4:5));
+  const options = shuffle([correct, ...distractors]);
+  return { format:'series', shown, correct, options, explanation, trick };
+}
+
+function genNumericalGridItem(tier){
+  // Verified against real PCPM material: the true relationship is a FIXED
+  // linear link (colA = k*colB + c, same k,c for every row) between two
+  // SPECIFIC columns, or a per-row recurrence (next = prev*k + c). Other
+  // columns are visual filler with no relationship - you must first find
+  // WHICH columns are linked before you can solve for the blank.
+  const useRowRecurrence = (tier==='high'||tier==='hyper') && Math.random()<0.5;
+  if(useRowRecurrence) return genGridRowRecurrence(tier);
+  return genGridColLinear(tier);
+}
+
+function genGridColLinear(tier){
+  const nCols = tier==='low' ? 3 : (tier==='medium' ? 3 : 4);
+  const nRows = 3;
+  const pairs = nCols===3 ? [[0,1]] : [[0,1],[2,3]];
+  const kRange = tier==='low' ? [1,3] : (tier==='medium' ? [-3,3] : (tier==='high' ? [-4,5] : [-6,7]));
+  const cRange = tier==='low' ? [0,5] : (tier==='medium' ? [-10,10] : (tier==='high' ? [-40,40] : [-100,100]));
+  const seedRange = tier==='low' ? [2,30] : (tier==='medium' ? [10,90] : (tier==='high' ? [50,400] : [100,900]));
+
+  const grid = Array.from({length:nRows},()=>Array(nCols).fill(0));
+  const relations = [];
+  pairs.forEach(([a,b])=>{
+    let k = randInt(kRange[0],kRange[1]); while(k===0) k=randInt(kRange[0],kRange[1]);
+    const c = randInt(cRange[0],cRange[1]);
+    for(let r=0;r<nRows;r++){
+      const seed = randInt(seedRange[0],seedRange[1]);
+      grid[r][b] = seed;
+      grid[r][a] = seed*k + c;
+    }
+    relations.push({a,b,k,c});
+  });
+  for(let cc=0;cc<nCols;cc++){
+    const used = pairs.some(([a,b])=>a===cc||b===cc);
+    if(!used) for(let r=0;r<nRows;r++) grid[r][cc] = randInt(seedRange[0],seedRange[1]);
+  }
+  const dependentCols = relations.map(rel=>rel.a);
+  const blankC = pick(dependentCols);
+  const blankR = randInt(0,nRows-1);
+  const rel = relations.find(rel=>rel.a===blankC);
+  const correct = grid[blankR][rel.b]*rel.k + rel.c;
+
+  const colLetter = (i)=> String.fromCharCode(65+i); // A,B,C,D for readability in explanation
+  const opSign = rel.c>=0 ? '+' : '−';
+  const opAbs = Math.abs(rel.c);
+  const relDesc = `kolom ${colLetter(rel.a)} = kolom ${colLetter(rel.b)} × ${rel.k}${opAbs? ' '+opSign+' '+opAbs : ''}`;
+  const explanation = `Bandingkan kolom-kolom yang SAMA nilainya di setiap baris (bukan pola per-baris). Yang sebenarnya berhubungan tetap di semua baris: <b>${relDesc}</b>. Kolom lain di tabel ini sengaja tidak berhubungan (pengecoh). Untuk baris ${blankR+1}: ${grid[blankR][rel.b]} × ${rel.k}${opAbs?' '+opSign+' '+opAbs:''} = <b>${correct}</b>.`;
+  const trick = `Jangan buru-buru cari pola dalam 1 baris. Coba bandingkan ANTAR KOLOM dulu di 2 baris yang sudah lengkap — cari kolom mana yang punya selisih atau rasio TETAP dengan kolom lain. Begitu ketemu pasangannya, terapkan ke baris yang bolong.`;
+  const distractors = buildDistractors(correct, tier==='low'?3:(tier==='medium'?4:5));
+  const options = shuffle([correct, ...distractors]);
+  return { format:'grid', grid, blankR, blankC, correct, options, explanation, trick };
+}
+
+function genGridRowRecurrence(tier){
+  const size = 4, nRows = 4;
+  const k = pick(tier==='hyper' ? [2,3,-2] : [2,-2,3]);
+  const c = tier==='hyper' ? randInt(-30,30) : randInt(-8,8);
+  const startRange = tier==='hyper' ? [20,300] : [10,150];
+  const grid = [];
+  for(let r=0;r<nRows;r++){
+    const row=[randInt(startRange[0],startRange[1])];
+    for(let cc=1;cc<size;cc++) row.push(row[cc-1]*k + c);
+    grid.push(row);
+  }
+  const blankC = randInt(1,size-1);
+  const blankR = randInt(0,nRows-1);
+  const correct = grid[blankR][blankC-1]*k + c;
+  const opSign = c>=0 ? '+' : '−';
+  const explanation = `Tiap BARIS mengikuti aturan rekursi yang SAMA: angka berikutnya = angka sebelumnya × ${k}${c!==0?' '+opSign+' '+Math.abs(c):''}. Cek baris manapun yang lengkap untuk menemukan aturan ini, lalu terapkan ke baris yang bolong. Untuk baris ${blankR+1}: ${grid[blankR][blankC-1]} × ${k}${c!==0?' '+opSign+' '+Math.abs(c):''} = <b>${correct}</b>.`;
+  const trick = `Cek satu baris LENGKAP dulu: apakah tiap angka = angka sebelumnya dikali suatu bilangan (lalu mungkin ditambah/dikurangi konstanta)? Kalau ya, aturan itu SAMA untuk semua baris — tinggal terapkan ke baris yang bolong dari angka sebelumnya di baris itu.`;
+  const distractors = buildDistractors(correct, tier==='high'?4:5);
+  const options = shuffle([correct, ...distractors]);
+  return { format:'grid', grid, blankR, blankC, correct, options, explanation, trick };
+}
+/* =========================================================
+   GENERATOR: DIAGRAMMATICAL REASONING
+   ========================================================= */
+const DIAG_RULES = {
+  low: [
+    { name:'dots0-vs-dots3', X: s=>s.dots===0, Y: s=>s.dots===3,
+      descX:'jumlah titik di dalam bentuk ada 0', descY:'jumlah titik di dalam bentuk ada 3', descN:'titik berjumlah 1 atau 2' },
+    { name:'sides-low-high', X: s=>s.sides<=4, Y: s=>s.sides>=7,
+      descX:'jumlah sisi 3 atau 4', descY:'jumlah sisi 7 atau 8', descN:'jumlah sisi 5 atau 6' },
+    { name:'filled-vs-outline-highsides', X: s=>s.filled, Y: s=>(!s.filled)&&s.sides>=6,
+      descX:'bentuk terisi penuh (solid), berapa pun sisinya', descY:'bentuk garis (outline) dengan sisi 6 ke atas', descN:'bentuk garis (outline) dengan sisi di bawah 6' }
+  ],
+  medium: [
+    { name:'sideshalf-filled-vs-dots', X: s=> s.sides<=5 && s.filled, Y: s=> s.sides>=6 && s.dots>=2,
+      descX:'sisi 3–5 DAN bentuk solid', descY:'sisi 6–8 DAN titik berjumlah 2 atau lebih', descN:'kombinasi lain (mis. sisi 3–5 tapi outline, atau sisi 6–8 tapi titik < 2)' },
+    { name:'dotshalf-sides-vs-filled', X: s=> s.dots<=1 && s.sides%2===0, Y: s=> s.dots>=2 && !s.filled,
+      descX:'titik 0–1 DAN jumlah sisi genap', descY:'titik 2–3 DAN bentuk garis (outline)', descN:'kombinasi lain' }
+  ],
+  high: [
+    { name:'dotshalf-mod3-vs-parity', X: s=> s.dots<=1 && s.dots===(s.sides%3), Y: s=> s.dots>=2 && s.filled===(s.sides%2===0),
+      descX:'titik 0–1 DAN titik = sisa bagi (jumlah sisi ÷ 3)', descY:'titik 2–3 DAN status solid/outline cocok dengan genap/ganjil sisi (genap→solid, ganjil→outline)', descN:'kombinasi lain' },
+    { name:'sideshalf-relational', X: s=> s.sides<=5 && s.dots===Math.min(3, 5-s.sides), Y: s=> s.sides>=6 && s.filled && s.dots<=1,
+      descX:'sisi 3–5 DAN titik = (5 − jumlah sisi), maksimal 3', descY:'sisi 6–8 DAN bentuk solid DAN titik 0–1', descN:'kombinasi lain' }
+  ],
+  hyper: [
+    { name:'triple-dots-mod-filled', X: s=> s.dots<=1 && s.dots===(s.sides%3) && s.filled, Y: s=> s.dots>=2 && s.sides%2===0 && !s.filled,
+      descX:'titik 0–1 DAN titik = sisa bagi (sisi÷3) DAN bentuk solid', descY:'titik 2–3 DAN jumlah sisi genap DAN bentuk outline', descN:'kombinasi lain' },
+    { name:'triple-sides-relational', X: s=> s.sides<=5 && s.dots===Math.min(3,5-s.sides) && s.sides%2===1, Y: s=> s.sides>=6 && s.filled && (s.dots+s.sides)%2===0,
+      descX:'sisi 3–5 (ganjil) DAN titik = (5−sisi)', descY:'sisi 6–8 DAN solid DAN (titik+sisi) genap', descN:'kombinasi lain' }
+  ]
+};
+function classify(rule, shape){
+  if(rule.X(shape)) return 'X';
+  if(rule.Y(shape)) return 'Y';
+  return 'N';
+}
+function randomShapeAll(){ return { sides: randInt(3,8), filled: Math.random()<0.5, dots: randInt(0,3) }; }
+function shapeOfClass(rule, cls, tries){
+  tries = tries || 500;
+  for(let i=0;i<tries;i++){
+    const s = randomShapeAll();
+    if(classify(rule,s)===cls) return s;
+  }
+  return randomShapeAll(); // fallback, extremely unlikely to be reached
+}
+function allShapes(){
+  const arr=[];
+  for(let sides=3;sides<=8;sides++) for(let filled=0;filled<=1;filled++) for(let dots=0;dots<=3;dots++)
+    arr.push({sides,filled:!!filled,dots});
+  return arr;
+}
+function genDiagramItem(tier){
+  const roll = Math.random();
+  if(roll<0.32) return genDiagram2x2Item(tier); // most authentic to real "Model X/Y" screenshots
+  if(roll<0.52) return genDiagramClassifyItem(tier);
+  if(roll<0.70) return genDiagramSequenceItem(tier);
+  if(roll<0.86) return genDiagramOddOneOutItem(tier);
+  return genDiagramMatrixItem(tier);
+}
+
+/* =========================================================
+   DIAGRAM: 2x2 compound-icon figure ("Model X / Model Y")
+   verified against real PCPM material — each figure is 4
+   mini-icons in a 2x2 cell, classified by count/position rules
+   guaranteed non-conflicting (checked by direct computation).
+   ========================================================= */
+const FIGURE_RULES = {
+  low: [
+    { X: c=>countTrue(c)===2, Y: c=>countTrue(c)===3, desc:'Kelompok X = tepat 2 dari 4 ikon terisi (solid); Kelompok Y = tepat 3 dari 4 ikon solid; selain itu Bukan Keduanya.' },
+    { X: c=>countTrue(c)===1, Y: c=>countTrue(c)===3, desc:'Kelompok X = tepat 1 ikon solid; Kelompok Y = tepat 3 ikon solid; selain itu Bukan Keduanya.' }
+  ],
+  medium: [
+    { X: c=> c[0]===true && countTrue(c)===2, Y: c=> c[0]===false && countTrue(c)===2, desc:'Kelompok X = pojok kiri-atas solid DAN total 2 solid; Kelompok Y = pojok kiri-atas tidak solid DAN total 2 solid; selain itu Bukan Keduanya.' },
+    { X: c=> c[0]===true && c[3]===true, Y: c=> c[1]===true && c[2]===true, desc:'Kelompok X = kedua sudut diagonal kiri-atas & kanan-bawah solid; Kelompok Y = kedua sudut diagonal kanan-atas & kiri-bawah solid; selain itu Bukan Keduanya.' }
+  ],
+  high: [
+    { X: c=> countTrue(c)%2===0 && c[0]===true, Y: c=> countTrue(c)%2===1 && c[0]===false, desc:'Kelompok X = jumlah ikon solid genap DAN pojok kiri-atas solid; Kelompok Y = jumlah ikon solid ganjil DAN pojok kiri-atas tidak solid; selain itu Bukan Keduanya.' }
+  ],
+  hyper: [
+    { X: c=> (c[0]===c[1]) && (c[2]!==c[3]), Y: c=> (c[0]!==c[1]) && (c[2]===c[3]), desc:'Kelompok X = baris atas SAMA (dua-duanya solid atau dua-duanya outline) DAN baris bawah BEDA; Kelompok Y = baris atas BEDA DAN baris bawah SAMA; selain itu Bukan Keduanya.' }
+  ]
+};
+function countTrue(cells){ return cells.filter(Boolean).length; }
+function classifyCells(rule, cells){ if(rule.X(cells)) return 'X'; if(rule.Y(cells)) return 'Y'; return 'N'; }
+function randomCells(){ return [Math.random()<0.5,Math.random()<0.5,Math.random()<0.5,Math.random()<0.5]; }
+function cellsOfClass(rule, cls, tries){
+  tries=tries||300;
+  for(let i=0;i<tries;i++){ const c=randomCells(); if(classifyCells(rule,c)===cls) return c; }
+  return randomCells();
+}
+function genDiagram2x2Item(tier){
+  const rule = pick(FIGURE_RULES[tier]);
+  const exX = [1,2,3,4].map(()=>cellsOfClass(rule,'X'));
+  const exY = [1,2,3,4].map(()=>cellsOfClass(rule,'Y'));
+  const targetClass = pick(['X','Y','N','X','Y']);
+  const target = cellsOfClass(rule, targetClass);
+  const answer = classifyCells(rule, target);
+  const explanation = `Aturan tersembunyi: ${rule.desc} Bentuk pada soal ini punya pola isi (kiri-atas, kanan-atas, kiri-bawah, kanan-bawah) = [${target.map(b=>b?'solid':'outline').join(', ')}] — sesuai definisi itu, masuk kelompok <b>${answer==='N'?'Bukan Keduanya':answer}</b>.`;
+  const trick = `Bandingkan SEMUA contoh Model X dengan SEMUA contoh Model Y satu per satu. Hitung dulu jumlah ikon solid di tiap contoh — kalau jumlahnya konsisten beda antar kelompok, itu kuncinya. Kalau jumlahnya sama, cek POSISI (sudut mana yang solid).`;
+  return { format:'figure2x2', exX, exY, target, answer, explanation, trick, options:['X','Y','N'] };
+}
+
+function genDiagramClassifyItem(tier){
+  const rule = pick(DIAG_RULES[tier]);
+  const exX = [1,2,3,4].map(()=> shapeOfClass(rule,'X'));
+  const exY = [1,2,3,4].map(()=> shapeOfClass(rule,'Y'));
+  const targetClass = pick(['X','Y','N','X','Y']); // slight bias away from N for a more balanced test
+  const target = shapeOfClass(rule, targetClass);
+  const answer = classify(rule, target);
+  const ruleText = `Kelompok X = ${rule.descX}. Kelompok Y = ${rule.descY}. Bukan Keduanya = ${rule.descN}.`;
+  const shapeDesc = `${target.sides} sisi, ${target.filled?'terisi penuh (solid)':'garis (outline)'}, ${target.dots} titik di dalam`;
+  const explanation = `Aturan tersembunyinya: ${ruleText} Bentuk pada soal ini punya ${shapeDesc} — sesuai definisi itu, bentuk ini masuk kelompok <b>${answer==='N'?'Bukan Keduanya':answer}</b>.`;
+  const trick = `Bandingkan SEMUA contoh Kelompok X dengan SEMUA contoh Kelompok Y satu per satu. Cari SATU ciri yang konsisten beda di kedua kelompok (jumlah sisi / isi-kosong / jumlah titik) — abaikan ciri yang bercampur, karena itu bukan kuncinya.`;
+  return { format:'classify', exX, exY, target, answer, explanation, trick, options:['X','Y','N'] };
+}
+
+function clampSides(s){ return Math.max(3, Math.min(8, s)); }
+function shapeEq(a,b){ return a.sides===b.sides && a.filled===b.filled && a.dots===b.dots; }
+
+function genDiagramSequenceItem(tier){
+  let stepFn, explanation, trick;
+  if(tier==='low'){
+    const sub = pick(['sidesInc','dotsCycle','filledToggle']);
+    const s0 = randInt(3,4), d0=randInt(0,2), f0=Math.random()<0.5;
+    if(sub==='sidesInc'){
+      stepFn = (step)=> ({ sides: clampSides(s0+step), filled:f0, dots:d0 });
+      explanation = `Jumlah sisi bertambah 1 tiap langkah (${s0}, ${s0+1}, ${s0+2}, ${s0+3}, ...), sementara isi (${f0?'solid':'outline'}) dan titik (${d0}) tetap sama.`;
+      trick = `Cek 1 ciri dulu: apakah jumlah sisi naik teratur? Kalau ya, itu kuncinya — abaikan ciri lain yang tetap sama.`;
+    } else if(sub==='dotsCycle'){
+      stepFn = (step)=> ({ sides:s0, filled:f0, dots: step%4 });
+      explanation = `Jumlah titik mengikuti siklus 0→1→2→3→0→1... (berulang tiap 4 langkah), sementara bentuk (${s0} sisi, ${f0?'solid':'outline'}) tetap sama.`;
+      trick = `Kalau salah satu ciri naik lalu "reset" ke awal lagi, itu tandanya pola siklus/perulangan — hitung sisa bagi (modulo) posisinya.`;
+    } else {
+      stepFn = (step)=> ({ sides:s0, filled: step%2===0?f0:!f0, dots:d0 });
+      explanation = `Status solid/outline berselang-seling tiap langkah, sementara jumlah sisi (${s0}) dan titik (${d0}) tetap sama.`;
+      trick = `Kalau satu ciri "on-off" bergantian tiap langkah, itu pola selang-seling — tinggal cek langkah genap/ganjil.`;
+    }
+  } else if(tier==='medium'){
+    const combo = pick(['sides+dots','sides+filled','dots+filled']);
+    const s0=randInt(3,4), d0=randInt(0,1), f0=Math.random()<0.5;
+    if(combo==='sides+dots'){
+      stepFn = (step)=> ({ sides:clampSides(s0+step), filled:f0, dots: step%4 });
+      explanation = `DUA ciri berubah bersamaan: jumlah sisi naik 1 tiap langkah (${s0},${s0+1},${s0+2}...) DAN jumlah titik mengikuti siklus 0→1→2→3→0. Isi (${f0?'solid':'outline'}) tetap sama.`;
+    } else if(combo==='sides+filled'){
+      stepFn = (step)=> ({ sides:clampSides(s0+step), filled: step%2===0?f0:!f0, dots:d0 });
+      explanation = `DUA ciri berubah bersamaan: jumlah sisi naik 1 tiap langkah DAN status solid/outline berselang-seling. Titik (${d0}) tetap sama.`;
+    } else {
+      stepFn = (step)=> ({ sides:s0, filled: step%2===0?f0:!f0, dots: step%4 });
+      explanation = `DUA ciri berubah bersamaan: jumlah titik mengikuti siklus 0→1→2→3→0 DAN status solid/outline berselang-seling. Jumlah sisi (${s0}) tetap sama.`;
+    }
+    trick = `Jangan cuma lihat 1 ciri — cek jumlah sisi, isi/kosong, DAN jumlah titik satu per satu di tiap langkah. Biasanya 1 ciri tetap, 2 ciri lain berubah dengan pola masing-masing.`;
+  } else {
+    const sA=randInt(3,4), sB=randInt(6,7);
+    stepFn = (step)=>{
+      const dots = step%4;
+      const sides = step%2===0 ? sA : sB;
+      const filled = (dots%2===0);
+      return { sides, filled, dots };
+    };
+    explanation = `Pola tersembunyi: jumlah titik mengikuti siklus 0→1→2→3→0 (berulang tiap 4 langkah). Jumlah sisi berselang-seling antara ${sA} (langkah genap) dan ${sB} (langkah ganjil). Status solid/outline DITENTUKAN oleh jumlah titik: titik genap → solid, titik ganjil → outline (bukan pola sendiri). Karena siklusnya berulang tiap 4 langkah, langkah ke-5 akan SAMA PERSIS dengan langkah pertama.`;
+    trick = `Kalau pola sisi & titik sudah ketemu tapi isi/kosongnya "aneh", coba cek apakah isi/kosong itu sebenarnya MENGIKUTI ciri lain (misal genap-ganjilnya jumlah titik). Dan selalu cek apakah polanya berulang tiap beberapa langkah (siklus).`;
+  }
+  const shownSteps = [0,1,2,3].map(stepFn);
+  const correct = stepFn(4);
+  const distractors = [];
+  const seen = [correct];
+  function tryAdd(shape){
+    shape = { sides: clampSides(shape.sides), dots: Math.max(0,Math.min(3,shape.dots)), filled: shape.filled };
+    if(seen.some(s=>shapeEq(s,shape))) return false;
+    seen.push(shape); distractors.push(shape); return true;
+  }
+  const attempts = [
+    {...correct, sides: correct.sides+1},
+    {...correct, sides: correct.sides-1},
+    {...correct, dots: (correct.dots+1)%4},
+    {...correct, dots: (correct.dots+3)%4},
+    {...correct, filled: !correct.filled},
+    {...correct, sides: correct.sides+2},
+  ];
+  for(const a of attempts){ if(distractors.length>=3) break; tryAdd(a); }
+  let guard=0;
+  while(distractors.length<3 && guard<50){
+    guard++;
+    tryAdd({ sides: clampSides(correct.sides + randInt(-2,2)), dots: randInt(0,3), filled: Math.random()<0.5 });
+  }
+  const options = shuffle([correct, ...distractors]);
+  function keyOf(s){ return s.sides+'|'+(s.filled?1:0)+'|'+s.dots; }
+  options.forEach(o=> o.key = keyOf(o));
+  // correct is the same object reference as its entry inside options, so its
+  // .key is already set by the loop above — but set it explicitly too in
+  // case that ever changes, so correctness never silently depends on aliasing.
+  correct.key = keyOf(correct);
+  return { format:'sequence', shownSteps, correct, options, explanation, trick };
+}
+
+function genDiagramOddOneOutItem(tier){
+  const all = allShapes();
+  let ruleFn, ruleDesc, res=null, attempts=0;
+  while(!res && attempts<10){
+    attempts++;
+    if(tier==='low'){
+      const attr = pick(['sidesParity','filled','dots']);
+      if(attr==='sidesParity'){ const we=Math.random()<0.5; ruleFn=s=>(s.sides%2===0)===we; ruleDesc=`jumlah sisi ${we?'genap':'ganjil'}`; }
+      else if(attr==='filled'){ const wf=Math.random()<0.5; ruleFn=s=>s.filled===wf; ruleDesc=`bentuk ${wf?'solid (terisi)':'outline (garis)'}`; }
+      else { const dv=randInt(0,3); ruleFn=s=>s.dots===dv; ruleDesc=`titik berjumlah ${dv}`; }
+    } else if(tier==='medium'){
+      const wf=Math.random()<0.5, we=Math.random()<0.5;
+      ruleFn = s=> s.filled===wf && (s.sides%2===0)===we;
+      ruleDesc = `bentuk ${wf?'solid':'outline'} DAN jumlah sisi ${we?'genap':'ganjil'}`;
+    } else {
+      const mod = pick([2,3]);
+      ruleFn = s=> s.dots === (s.sides % mod);
+      ruleDesc = `jumlah titik SAMA DENGAN sisa bagi (jumlah sisi ÷ ${mod})`;
+    }
+    const pool = all.filter(ruleFn);
+    const antiPool = all.filter(s=>!ruleFn(s));
+    if(pool.length>=4 && antiPool.length>=1){
+      const four = shuffle(pool).slice(0,4);
+      const outlier = pick(antiPool);
+      const wrongIdx = randInt(0,4);
+      const shapes = four.slice(); shapes.splice(wrongIdx,0,outlier);
+      res = { shapes, correct: wrongIdx+1, ruleDesc };
+    }
+  }
+  const explanation = `4 bentuk lainnya semua memenuhi ciri: ${res.ruleDesc}. Bentuk di posisi ${res.correct} TIDAK memenuhi ciri itu.`;
+  const trick = `Cek satu ciri dulu (jumlah sisi / isi-kosong / jumlah titik) di 4 bentuk yang "mirip". Begitu ciri bersamanya ketemu, tinggal cari yang menyimpang.`;
+  return { format:'oddOneOut', shapes:res.shapes, correct:res.correct, options:[1,2,3,4,5], explanation, trick };
+}
+
+function genDiagramMatrixItem(tier){
+  const s0 = randInt(3,4), d0 = randInt(0,1);
+  let sidesFn, dotsFn, filledFn, explanation, trick;
+  if(tier==='low'){
+    const f0 = Math.random()<0.5;
+    sidesFn=(r,c)=>clampSides(s0+c); dotsFn=()=>d0; filledFn=()=>f0;
+    explanation = `Jumlah sisi bertambah 1 tiap kolom ke kanan (${s0}, ${s0+1}, ${s0+2}), sama di setiap baris. Titik (${d0}) dan isi (${f0?'solid':'outline'}) tetap sama di semua sel.`;
+    trick = `Cek satu baris dulu — kalau semua baris punya pola kolom yang sama, cukup lihat 1 baris untuk menebak sel kosong.`;
+  } else if(tier==='medium'){
+    const f0 = Math.random()<0.5;
+    sidesFn=(r,c)=>clampSides(s0+c); dotsFn=(r)=>Math.min(3,d0+r); filledFn=()=>f0;
+    explanation = `DUA pola berjalan bersamaan: jumlah sisi bertambah 1 tiap kolom (${s0},${s0+1},${s0+2}), dan jumlah titik bertambah 1 tiap baris (mulai dari ${d0}). Isi (${f0?'solid':'outline'}) tetap sama di semua sel.`;
+    trick = `Jangan campur aduk arah baris dan kolom. Cek perubahan MENYAMPING (antar kolom) dan MENURUN (antar baris) secara terpisah, satu per satu.`;
+  } else {
+    sidesFn=(r,c)=>clampSides(s0+c); dotsFn=(r)=>Math.min(3,d0+r); filledFn=(r,c)=>r===c;
+    explanation = `Jumlah sisi bertambah 1 tiap kolom, jumlah titik bertambah 1 tiap baris — sama seperti pola menengah. Tapi isi/kosongnya TIDAK sembarang: hanya sel di garis DIAGONAL (baris = kolom, yaitu kiri-atas ke kanan-bawah) yang solid, sisanya outline.`;
+    trick = `Kalau pola sisi & titik sudah ketemu tapi isi/kosongnya "acak", coba cek posisi diagonal (baris=kolom) — banyak matriks level tinggi menyembunyikan aturan tambahan di situ.`;
+  }
+  const grid=[];
+  for(let r=0;r<3;r++){ const row=[]; for(let c=0;c<3;c++) row.push({sides:sidesFn(r,c),dots:dotsFn(r,c),filled:filledFn(r,c)}); grid.push(row); }
+  const blankR=2, blankC=2;
+  const correct = grid[blankR][blankC];
+  function keyOfM(s){ return s.sides+'|'+(s.filled?1:0)+'|'+s.dots; }
+  correct.key = keyOfM(correct);
+  const distractors=[]; const seen=[correct];
+  function tryAdd(shape){
+    shape = {sides:clampSides(shape.sides), dots:Math.max(0,Math.min(3,shape.dots)), filled:shape.filled};
+    shape.key = keyOfM(shape);
+    if(seen.some(s=>s.key===shape.key)) return false;
+    seen.push(shape); distractors.push(shape); return true;
+  }
+  const attempts=[
+    {...correct, sides:correct.sides+1},{...correct, sides:correct.sides-1},
+    {...correct, dots:(correct.dots+1)%4},{...correct, dots:(correct.dots+3)%4},
+    {...correct, filled:!correct.filled},
+    {sides:clampSides(correct.sides-2), dots:correct.dots, filled:correct.filled}
+  ];
+  for(const a of attempts){ if(distractors.length>=5) break; tryAdd(a); }
+  let guard=0;
+  while(distractors.length<5 && guard<80){ guard++; tryAdd({sides:randInt(3,8), dots:randInt(0,3), filled:Math.random()<0.5}); }
+  const nOpt = tier==='low'?3:(tier==='medium'?4:5);
+  const options = shuffle([correct, ...distractors.slice(0,nOpt)]);
+  return { format:'matrix', grid, blankR, blankC, correct, options, explanation, trick };
+}
+
+/* =========================================================
+   VERBAL REASONING BANK  (hand-authored, 15 items per tier)
+   ========================================================= */
+const VERBAL_BANK = {
+  low: [
+    {p:"Bank Indonesia memiliki kantor pusat di Jakarta dan kantor perwakilan di berbagai provinsi di Indonesia. Kantor perwakilan ini membantu pelaksanaan tugas Bank Indonesia di daerah.", s:"Bank Indonesia memiliki kantor perwakilan di daerah.", a:"True"},
+    {p:"Bank Indonesia memiliki kantor pusat di Jakarta dan kantor perwakilan di berbagai provinsi di Indonesia. Kantor perwakilan ini membantu pelaksanaan tugas Bank Indonesia di daerah.", s:"Semua kantor perwakilan Bank Indonesia berada di luar negeri.", a:"False"},
+    {p:"Setiap pagi, Andi berangkat kerja menggunakan kereta commuter line dari stasiun dekat rumahnya menuju kantor di pusat kota.", s:"Andi bekerja di pusat kota.", a:"True"},
+    {p:"Setiap pagi, Andi berangkat kerja menggunakan kereta commuter line dari stasiun dekat rumahnya menuju kantor di pusat kota.", s:"Andi selalu terlambat sampai ke kantor.", a:"Cannot Say"},
+    {p:"Sebuah bank mengumumkan bahwa suku bunga tabungan akan naik mulai bulan depan. Pengumuman ini disambut baik oleh nasabah yang memiliki simpanan besar.", s:"Suku bunga tabungan akan turun bulan depan.", a:"False"},
+    {p:"Sebuah bank mengumumkan bahwa suku bunga tabungan akan naik mulai bulan depan. Pengumuman ini disambut baik oleh nasabah yang memiliki simpanan besar.", s:"Semua nasabah bank tersebut memiliki simpanan besar.", a:"Cannot Say"},
+    {p:"Tono adalah seorang programmer yang bekerja di sebuah perusahaan teknologi. Ia biasa bekerja dari rumah tiga hari dalam seminggu.", s:"Tono bekerja di bidang teknologi.", a:"True"},
+    {p:"Tono adalah seorang programmer yang bekerja di sebuah perusahaan teknologi. Ia biasa bekerja dari rumah tiga hari dalam seminggu.", s:"Tono bekerja dari rumah setiap hari.", a:"False"},
+    {p:"Harga emas dunia mengalami kenaikan signifikan pada kuartal terakhir tahun ini, didorong oleh ketidakpastian ekonomi global.", s:"Harga emas naik karena ketidakpastian ekonomi global.", a:"True"},
+    {p:"Harga emas dunia mengalami kenaikan signifikan pada kuartal terakhir tahun ini, didorong oleh ketidakpastian ekonomi global.", s:"Harga emas akan terus naik di tahun depan.", a:"Cannot Say"},
+    {p:"Perusahaan XYZ mencatat pertumbuhan laba sebesar 15% dibandingkan tahun sebelumnya, didorong oleh peningkatan penjualan di segmen ritel.", s:"Laba perusahaan XYZ meningkat dibanding tahun sebelumnya.", a:"True"},
+    {p:"Perusahaan XYZ mencatat pertumbuhan laba sebesar 15% dibandingkan tahun sebelumnya, didorong oleh peningkatan penjualan di segmen ritel.", s:"Pertumbuhan laba XYZ didorong oleh segmen ekspor.", a:"False"},
+    {p:"Museum Nasional buka setiap hari kecuali Senin, mulai pukul 08.00 hingga 16.00.", s:"Museum Nasional tutup pada hari Senin.", a:"True"},
+    {p:"Museum Nasional buka setiap hari kecuali Senin, mulai pukul 08.00 hingga 16.00.", s:"Museum Nasional buka 24 jam.", a:"False"},
+    {p:"Rina baru saja lulus kuliah jurusan akuntansi dan sedang mencari pekerjaan di bidang keuangan.", s:"Rina sudah bekerja di sebuah bank.", a:"Cannot Say"}
+  ],
+  medium: [
+    {p:"Ketika permintaan terhadap suatu barang meningkat sementara pasokannya tetap, harga barang tersebut cenderung naik. Musim liburan tahun ini, permintaan tiket pesawat domestik meningkat tajam dibandingkan bulan-bulan biasa.", s:"Harga tiket pesawat domestik musim liburan ini pasti naik dibandingkan bulan biasa.", a:"Cannot Say"},
+    {p:"Ketika permintaan terhadap suatu barang meningkat sementara pasokannya tetap, harga barang tersebut cenderung naik. Musim liburan tahun ini, permintaan tiket pesawat domestik meningkat tajam dibandingkan bulan-bulan biasa.", s:"Jika pasokan tiket pesawat musim liburan ini juga meningkat sebanding dengan permintaan, prinsip di atas tidak otomatis memprediksi kenaikan harga.", a:"True"},
+    {p:"Sebuah studi menunjukkan bahwa karyawan yang mendapatkan pelatihan tambahan cenderung memiliki produktivitas lebih tinggi. Perusahaan ABC baru saja meluncurkan program pelatihan wajib bagi seluruh karyawannya.", s:"Produktivitas seluruh karyawan ABC pasti akan meningkat setelah pelatihan ini.", a:"False"},
+    {p:"Sebuah studi menunjukkan bahwa karyawan yang mendapatkan pelatihan tambahan cenderung memiliki produktivitas lebih tinggi. Perusahaan ABC baru saja meluncurkan program pelatihan wajib bagi seluruh karyawannya.", s:"Program pelatihan ABC bersifat wajib bagi seluruh karyawan.", a:"True"},
+    {p:"Bank sentral suatu negara menaikkan suku bunga acuan untuk meredam inflasi yang tinggi. Namun, kenaikan suku bunga juga dapat memperlambat pertumbuhan ekonomi karena biaya pinjaman menjadi lebih mahal.", s:"Kenaikan suku bunga acuan memiliki potensi trade-off antara pengendalian inflasi dan pertumbuhan ekonomi.", a:"True"},
+    {p:"Bank sentral suatu negara menaikkan suku bunga acuan untuk meredam inflasi yang tinggi. Namun, kenaikan suku bunga juga dapat memperlambat pertumbuhan ekonomi karena biaya pinjaman menjadi lebih mahal.", s:"Bank sentral tersebut memutuskan untuk menurunkan suku bunga acuan.", a:"False"},
+    {p:"Sebuah restoran mencatat peningkatan jumlah pengunjung setiap akhir pekan dibandingkan hari kerja biasa. Manajemen restoran berencana menambah jumlah staf pada akhir pekan untuk mengimbangi lonjakan pengunjung tersebut.", s:"Restoran tersebut lebih ramai pada akhir pekan dibandingkan hari kerja.", a:"True"},
+    {p:"Sebuah restoran mencatat peningkatan jumlah pengunjung setiap akhir pekan dibandingkan hari kerja biasa. Manajemen restoran berencana menambah jumlah staf pada akhir pekan untuk mengimbangi lonjakan pengunjung tersebut.", s:"Restoran tersebut sudah menambah staf pada akhir pekan.", a:"Cannot Say"},
+    {p:"Investor yang mendiversifikasi portofolionya ke berbagai jenis aset umumnya memiliki risiko kerugian yang lebih rendah dibandingkan investor yang hanya berinvestasi pada satu jenis aset saja.", s:"Diversifikasi portofolio dapat membantu menurunkan risiko investasi.", a:"True"},
+    {p:"Investor yang mendiversifikasi portofolionya ke berbagai jenis aset umumnya memiliki risiko kerugian yang lebih rendah dibandingkan investor yang hanya berinvestasi pada satu jenis aset saja.", s:"Investor yang mendiversifikasi portofolionya pasti tidak akan pernah mengalami kerugian.", a:"False"},
+    {p:"Dalam lima tahun terakhir, jumlah pengguna layanan perbankan digital di Indonesia meningkat pesat, seiring dengan semakin luasnya jaringan internet di berbagai daerah.", s:"Perluasan jaringan internet berkaitan dengan peningkatan pengguna layanan perbankan digital.", a:"True"},
+    {p:"Dalam lima tahun terakhir, jumlah pengguna layanan perbankan digital di Indonesia meningkat pesat, seiring dengan semakin luasnya jaringan internet di berbagai daerah.", s:"Jumlah pengguna layanan perbankan digital di kota besar lebih banyak dibandingkan di daerah pedesaan.", a:"Cannot Say"},
+    {p:"Perusahaan penerbangan menaikkan harga tiket menjelang musim liburan karena tingginya permintaan. Beberapa maskapai juga menambah jumlah penerbangan untuk mengakomodasi lonjakan penumpang.", s:"Semua maskapai menaikkan harga tiket menjelang liburan.", a:"Cannot Say"},
+    {p:"Perusahaan penerbangan menaikkan harga tiket menjelang musim liburan karena tingginya permintaan. Beberapa maskapai juga menambah jumlah penerbangan untuk mengakomodasi lonjakan penumpang.", s:"Beberapa maskapai menambah jumlah penerbangan untuk mengakomodasi lonjakan penumpang.", a:"True"},
+    {p:"Sebuah kota menerapkan kebijakan pembatasan kendaraan bermotor pada hari-hari tertentu untuk mengurangi kemacetan. Sejak kebijakan ini diterapkan, tingkat polusi udara di kota tersebut tercatat menurun.", s:"Kebijakan pembatasan kendaraan berkaitan dengan penurunan tingkat polusi udara di kota tersebut.", a:"True"}
+  ],
+  high: [
+    {p:"Tidak semua kebijakan makroprudensial bersifat memperketat kondisi keuangan; sebagian justru dirancang untuk melonggarkan penyaluran kredit guna mendorong pertumbuhan ekonomi pada saat kondisi ekonomi melemah. Bank sentral biasanya mempertimbangkan kondisi siklus ekonomi sebelum menentukan arah kebijakan makroprudensial yang akan diterapkan.", s:"Semua kebijakan makroprudensial bertujuan memperketat kondisi keuangan.", a:"False"},
+    {p:"Tidak semua kebijakan makroprudensial bersifat memperketat kondisi keuangan; sebagian justru dirancang untuk melonggarkan penyaluran kredit guna mendorong pertumbuhan ekonomi pada saat kondisi ekonomi melemah. Bank sentral biasanya mempertimbangkan kondisi siklus ekonomi sebelum menentukan arah kebijakan makroprudensial yang akan diterapkan.", s:"Kebijakan makroprudensial yang melonggarkan kredit hanya diterapkan saat ekonomi melemah.", a:"Cannot Say"},
+    {p:"Tidak semua kebijakan makroprudensial bersifat memperketat kondisi keuangan; sebagian justru dirancang untuk melonggarkan penyaluran kredit guna mendorong pertumbuhan ekonomi pada saat kondisi ekonomi melemah. Bank sentral biasanya mempertimbangkan kondisi siklus ekonomi sebelum menentukan arah kebijakan makroprudensial yang akan diterapkan.", s:"Bank sentral mempertimbangkan siklus ekonomi dalam menentukan kebijakan makroprudensial.", a:"True"},
+    {p:"Meskipun inflasi tahunan berada dalam kisaran target, bank sentral tetap mewaspadai risiko dari sisi eksternal, seperti gejolak nilai tukar akibat ketidakpastian global. Oleh karena itu, beberapa analis memperkirakan bank sentral akan mempertahankan sikap kebijakan yang berhati-hati meski tidak menaikkan suku bunga dalam waktu dekat.", s:"Inflasi tahunan saat ini berada di luar kisaran target.", a:"False"},
+    {p:"Meskipun inflasi tahunan berada dalam kisaran target, bank sentral tetap mewaspadai risiko dari sisi eksternal, seperti gejolak nilai tukar akibat ketidakpastian global. Oleh karena itu, beberapa analis memperkirakan bank sentral akan mempertahankan sikap kebijakan yang berhati-hati meski tidak menaikkan suku bunga dalam waktu dekat.", s:"Bank sentral dipastikan tidak akan menaikkan suku bunga dalam waktu dekat.", a:"Cannot Say"},
+    {p:"Meskipun inflasi tahunan berada dalam kisaran target, bank sentral tetap mewaspadai risiko dari sisi eksternal, seperti gejolak nilai tukar akibat ketidakpastian global. Oleh karena itu, beberapa analis memperkirakan bank sentral akan mempertahankan sikap kebijakan yang berhati-hati meski tidak menaikkan suku bunga dalam waktu dekat.", s:"Bank sentral tetap mewaspadai risiko dari sisi eksternal meski inflasi berada dalam kisaran target.", a:"True"},
+    {p:"Sebagian besar, namun tidak seluruh, negara berkembang mengalami tekanan nilai tukar akibat penguatan dolar AS tahun ini. Negara-negara dengan cadangan devisa yang kuat dan defisit transaksi berjalan yang terkendali cenderung lebih tahan terhadap tekanan tersebut.", s:"Semua negara berkembang mengalami tekanan nilai tukar tahun ini.", a:"False"},
+    {p:"Sebagian besar, namun tidak seluruh, negara berkembang mengalami tekanan nilai tukar akibat penguatan dolar AS tahun ini. Negara-negara dengan cadangan devisa yang kuat dan defisit transaksi berjalan yang terkendali cenderung lebih tahan terhadap tekanan tersebut.", s:"Negara dengan cadangan devisa lemah pasti akan mengalami krisis mata uang.", a:"Cannot Say"},
+    {p:"Sebagian besar, namun tidak seluruh, negara berkembang mengalami tekanan nilai tukar akibat penguatan dolar AS tahun ini. Negara-negara dengan cadangan devisa yang kuat dan defisit transaksi berjalan yang terkendali cenderung lebih tahan terhadap tekanan tersebut.", s:"Defisit transaksi berjalan yang terkendali berkaitan dengan ketahanan yang lebih baik terhadap tekanan nilai tukar.", a:"True"},
+    {p:"Riset menunjukkan korelasi positif antara tingkat pendidikan dan pendapatan rata-rata di suatu wilayah, meskipun korelasi tidak selalu menunjukkan hubungan sebab-akibat secara langsung. Faktor lain seperti struktur industri lokal juga turut memengaruhi tingkat pendapatan.", s:"Tingkat pendidikan yang lebih tinggi pasti menyebabkan pendapatan yang lebih tinggi.", a:"False"},
+    {p:"Riset menunjukkan korelasi positif antara tingkat pendidikan dan pendapatan rata-rata di suatu wilayah, meskipun korelasi tidak selalu menunjukkan hubungan sebab-akibat secara langsung. Faktor lain seperti struktur industri lokal juga turut memengaruhi tingkat pendapatan.", s:"Struktur industri lokal adalah satu-satunya faktor yang memengaruhi tingkat pendapatan di wilayah tersebut.", a:"False"},
+    {p:"Riset menunjukkan korelasi positif antara tingkat pendidikan dan pendapatan rata-rata di suatu wilayah, meskipun korelasi tidak selalu menunjukkan hubungan sebab-akibat secara langsung. Faktor lain seperti struktur industri lokal juga turut memengaruhi tingkat pendapatan.", s:"Terdapat korelasi positif antara tingkat pendidikan dan pendapatan rata-rata di wilayah yang diteliti.", a:"True"},
+    {p:"Ketika bank sentral menerapkan kebijakan moneter longgar dalam jangka panjang tanpa disertai reformasi struktural, sejumlah ekonom mengingatkan potensi risiko gelembung aset (asset bubble) di sektor tertentu, meskipun risiko ini tidak selalu terwujud tergantung kondisi spesifik masing-masing perekonomian.", s:"Kebijakan moneter longgar jangka panjang pasti akan menyebabkan gelembung aset.", a:"False"},
+    {p:"Ketika bank sentral menerapkan kebijakan moneter longgar dalam jangka panjang tanpa disertai reformasi struktural, sejumlah ekonom mengingatkan potensi risiko gelembung aset (asset bubble) di sektor tertentu, meskipun risiko ini tidak selalu terwujud tergantung kondisi spesifik masing-masing perekonomian.", s:"Risiko gelembung aset akibat kebijakan moneter longgar jangka panjang bergantung pada kondisi spesifik masing-masing perekonomian.", a:"True"},
+    {p:"Ketika bank sentral menerapkan kebijakan moneter longgar dalam jangka panjang tanpa disertai reformasi struktural, sejumlah ekonom mengingatkan potensi risiko gelembung aset (asset bubble) di sektor tertentu, meskipun risiko ini tidak selalu terwujud tergantung kondisi spesifik masing-masing perekonomian.", s:"Reformasi struktural yang menyertai kebijakan moneter longgar dapat memengaruhi risiko gelembung aset yang diperingatkan para ekonom.", a:"Cannot Say"}
+  ]
+};
+function verbalExplain(item){
+  const map = {
+    True: "pernyataan ini SEJALAN / langsung didukung oleh kalimat di teks.",
+    False: "pernyataan ini BERLAWANAN dengan apa yang dikatakan teks.",
+    "Cannot Say": "teks TIDAK PERNAH menyebutkan hal ini secara eksplisit — meskipun terdengar masuk akal, kita tidak boleh menebak dari pengetahuan umum di luar teks."
+  };
+  return `Jawabannya <b>${item.a}</b> karena ${map[item.a]}`;
+}
+const VERBAL_TRICK = `Kalau pernyataan PERSIS sejalan dengan teks → True. Kalau BERLAWANAN dengan teks → False. Kalau masuk akal tapi teksnya TIDAK PERNAH bilang itu → Cannot Say. Jangan pakai pengetahuan umum di luar teks yang diberikan.`;
+const SYLLOGISM_TRICK = `Perhatikan kata kunci seperti "semua", "sebagian", "hanya", "jika...maka", dan "dapat" (vs "pasti"). Jangan pilih kesimpulan yang melebihi apa yang benar-benar dijamin oleh premisnya — kesimpulan yang "terdengar masuk akal" belum tentu PASTI benar.`;
+
+const SYLLOGISM_BANK = {
+  low: [
+    { p:'Semua pegawai Bank Indonesia wajib mengikuti kode etik. Rina adalah pegawai Bank Indonesia.',
+      options:['Rina wajib mengikuti kode etik','Rina tidak wajib mengikuti kode etik','Hanya sebagian pegawai BI wajib mengikuti kode etik','Tidak dapat disimpulkan'],
+      correctIndex:0, explanation:'Premis menyatakan SEMUA pegawai BI wajib mengikuti kode etik, dan Rina adalah pegawai BI — jadi otomatis berlaku untuknya. Ini silogisme langsung: Semua A adalah B, Rina adalah A, maka Rina adalah B.' },
+    { p:'Jika suku bunga naik, biaya pinjaman naik. Suku bunga bulan ini naik.',
+      options:['Biaya pinjaman bulan ini naik','Biaya pinjaman bulan ini turun','Biaya pinjaman tidak terpengaruh','Tidak dapat disimpulkan'],
+      correctIndex:0, explanation:'Ini pola "Jika P maka Q; P terjadi; maka Q terjadi" (modus ponens) — bentuk penalaran paling dasar dan selalu valid.' },
+    { p:'Hanya peserta yang lolos tes kesehatan yang boleh mengikuti wawancara akhir. Budi tidak lolos tes kesehatan.',
+      options:['Budi boleh mengikuti wawancara akhir','Budi tidak boleh mengikuti wawancara akhir','Budi pasti lolos ke tahap lain','Tidak dapat disimpulkan'],
+      correctIndex:1, explanation:'Kata "HANYA" membuat lolos tes kesehatan jadi syarat MUTLAK (bukan sekadar salah satu jalan). Karena Budi tidak memenuhi syarat itu, ia pasti tidak boleh ikut wawancara akhir.' },
+    { p:'Semua kebijakan yang disetujui Dewan Gubernur bersifat mengikat. Kebijakan X bersifat mengikat.',
+      options:['Kebijakan X pasti disetujui Dewan Gubernur','Kebijakan X mungkin tidak disetujui Dewan Gubernur','Kebijakan X pasti bukan kebijakan resmi','Semua kebijakan mengikat berasal dari Dewan Gubernur'],
+      correctIndex:1, explanation:'Ini jebakan klasik "membalik" pernyataan (affirming the consequent). "Semua A adalah B" TIDAK berarti "Semua B adalah A" — bisa saja ada sumber lain yang membuat kebijakan bersifat mengikat.' }
+  ],
+  medium: [
+    { p:'Semua analis risiko memiliki sertifikasi manajemen risiko. Semua pemegang sertifikasi manajemen risiko mengikuti pelatihan tahunan. Ani adalah analis risiko.',
+      options:['Ani mengikuti pelatihan tahunan','Ani tidak mengikuti pelatihan tahunan','Ani belum tentu punya sertifikasi','Tidak dapat disimpulkan'],
+      correctIndex:0, explanation:'Rantai dua langkah yang valid: analis risiko → punya sertifikasi → ikut pelatihan tahunan. Karena Ani analis risiko, ia otomatis mengikuti seluruh rantai itu.' },
+    { p:'Jika inflasi tinggi, bank sentral menaikkan suku bunga. Jika suku bunga naik, investasi cenderung melambat. Inflasi saat ini tinggi.',
+      options:['Investasi cenderung melambat','Investasi pasti meningkat','Suku bunga pasti turun','Tidak dapat disimpulkan'],
+      correctIndex:0, explanation:'Dua modus ponens berantai: inflasi tinggi → suku bunga naik → investasi melambat. Karena premis pertama (inflasi tinggi) benar, seluruh rantai berlaku.' },
+    { p:'Tidak ada pegawai magang yang memiliki akses ke sistem inti. Semua yang memiliki akses ke sistem inti wajib menandatangani NDA. Dedi adalah pegawai magang.',
+      options:['Dedi wajib menandatangani NDA','Dedi tidak wajib menandatangani NDA','Tidak dapat disimpulkan dari premis ini','Semua pegawai magang punya akses ke sistem inti'],
+      correctIndex:2, explanation:'Premis hanya menjelaskan syarat NDA untuk yang PUNYA akses. Karena Dedi tidak punya akses (sebagai magang), premis ini sama sekali tidak bicara soal kewajiban NDA-nya lewat jalur lain — jadi tidak bisa disimpulkan wajib ATAU tidak wajib.' },
+    { p:'Semua produk yang lolos uji kualitas mendapatkan sertifikat SNI. Produk Z tidak mendapatkan sertifikat SNI.',
+      options:['Produk Z lolos uji kualitas','Produk Z tidak lolos uji kualitas','Produk Z sedang dalam proses uji','Tidak dapat disimpulkan'],
+      correctIndex:1, explanation:'Modus tollens: "lolos → dapat SNI", dan Z TIDAK dapat SNI, maka Z pasti TIDAK lolos uji kualitas.' }
+  ],
+  high: [
+    { p:'Sebagian pegawai senior memiliki wewenang menyetujui anggaran besar. Semua yang memiliki wewenang menyetujui anggaran besar telah mengikuti pelatihan kepemimpinan lanjutan. Budi adalah pegawai senior.',
+      options:['Budi pasti telah mengikuti pelatihan kepemimpinan lanjutan','Budi belum tentu telah mengikuti pelatihan kepemimpinan lanjutan','Budi pasti tidak memiliki wewenang menyetujui anggaran besar','Semua pegawai senior memiliki wewenang menyetujui anggaran besar'],
+      correctIndex:1, explanation:'Karena hanya "SEBAGIAN" pegawai senior yang punya wewenang itu, Budi (yang cuma diketahui "pegawai senior") belum tentu termasuk bagian itu. Jangan menggeneralisasi "sebagian" jadi "pasti".' },
+    { p:'Tidak ada kebijakan yang belum melalui kajian risiko yang dapat disetujui Dewan Gubernur. Kebijakan Y telah disetujui Dewan Gubernur.',
+      options:['Kebijakan Y belum melalui kajian risiko','Kebijakan Y telah melalui kajian risiko','Kebijakan Y tidak memerlukan kajian risiko','Tidak dapat disimpulkan'],
+      correctIndex:1, explanation:'"Tidak ada yang BELUM dikaji dapat disetujui" sama artinya dengan "yang disetujui PASTI sudah dikaji" (kontraposisi). Karena Y disetujui, Y pasti sudah melalui kajian risiko.' },
+    { p:'Jika suatu bank gagal memenuhi rasio kecukupan modal minimum, otoritas DAPAT mengenakan sanksi. Bank ABC tidak dikenakan sanksi.',
+      options:['Bank ABC pasti memenuhi rasio kecukupan modal minimum','Bank ABC belum tentu memenuhi rasio kecukupan modal minimum','Bank ABC pasti melanggar ketentuan lain','Otoritas tidak berwenang mengenakan sanksi ke Bank ABC'],
+      correctIndex:1, explanation:'Kata kuncinya "DAPAT", bukan "PASTI". Sanksi hanya salah satu kemungkinan akibat, bukan keharusan — jadi tidak dikenakan sanksi TIDAK otomatis membuktikan rasio modalnya terpenuhi.' },
+    { p:'Semua auditor independen tidak memiliki hubungan afiliasi dengan perusahaan yang diaudit. Sebagian pegawai Bank XYZ memiliki hubungan afiliasi dengan perusahaan tertentu yang mereka audit.',
+      options:['Sebagian pegawai Bank XYZ bukan auditor independen','Semua pegawai Bank XYZ bukan auditor independen','Semua pegawai Bank XYZ adalah auditor independen','Tidak dapat disimpulkan'],
+      correctIndex:0, explanation:'Karena auditor independen TIDAK PERNAH punya afiliasi, dan SEBAGIAN pegawai Bank XYZ justru punya afiliasi, sebagian pegawai itu (yang berafiliasi) pasti bukan auditor independen — tapi ini cuma berlaku untuk "sebagian", bukan bisa digeneralisasi ke "semua" pegawai Bank XYZ.' }
+  ]
+};
+
+/* =========================================================
+   ARRANGEMENT / SEQUENCING PUZZLE (analytical reasoning) —
+   long narrative + many clues, uniqueness verified by brute force
+   over all permutations before the puzzle is ever shown.
+   ========================================================= */
+function permutations(arr){
+  if(arr.length<=1) return [arr];
+  const result=[];
+  for(let i=0;i<arr.length;i++){
+    const rest = arr.slice(0,i).concat(arr.slice(i+1));
+    for(const p of permutations(rest)) result.push([arr[i], ...p]);
+  }
+  return result;
+}
+const ARRANGEMENT_NAMES = ['Andi','Budi','Citra','Dedi','Eka','Fani','Gita'];
+
+function buildCluearrPool(names, perm){
+  const pos = {}; names.forEach(n=> pos[n]=perm.indexOf(n));
+  const clues = []; const n = names.length;
+  names.forEach(nm=> clues.push({ text:`${nm} berada di posisi ke-${pos[nm]+1}`, check:(p)=> p.indexOf(nm)===pos[nm] }));
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    if(i===j) continue;
+    if(pos[names[i]] === pos[names[j]]-1) clues.push({ text:`${names[i]} tepat di sebelah kiri ${names[j]}`, check:(p)=> p.indexOf(names[i])===p.indexOf(names[j])-1 });
+    if(pos[names[i]] === pos[names[j]]+1) clues.push({ text:`${names[i]} tepat di sebelah kanan ${names[j]}`, check:(p)=> p.indexOf(names[i])===p.indexOf(names[j])+1 });
+  }
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    if(i===j) continue;
+    if(pos[names[i]] < pos[names[j]]) clues.push({ text:`${names[i]} berada di sebelah kiri ${names[j]}`, check:(p)=> p.indexOf(names[i]) < p.indexOf(names[j]) });
+  }
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    if(Math.abs(pos[names[i]]-pos[names[j]])!==1) clues.push({ text:`${names[i]} dan ${names[j]} tidak duduk bersebelahan`, check:(p)=> Math.abs(p.indexOf(names[i])-p.indexOf(names[j]))!==1 });
+  }
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    const d = Math.abs(pos[names[i]]-pos[names[j]]) - 1;
+    if(d>=1) clues.push({ text:`Ada tepat ${d} orang di antara ${names[i]} dan ${names[j]}`, check:(p)=> Math.abs(p.indexOf(names[i])-p.indexOf(names[j]))-1===d });
+  }
+  return clues;
+}
+function countConsistentPerms(allPerms, clues){
+  let count=0, matchIdx=-1;
+  for(let k=0;k<allPerms.length;k++){ if(clues.every(c=>c.check(allPerms[k]))){ count++; matchIdx=k; } }
+  return { count, matchIdx };
+}
+function genArrangementItemRaw(tier){
+  const nPeople = tier==='hyper' ? 6 : (tier==='low' ? 4 : 5);
+  const names = shuffle(ARRANGEMENT_NAMES).slice(0, nPeople);
+  const secret = shuffle(names);
+  const allPerms = permutations(names);
+  const uniquePool = []; const seenText = new Set();
+  shuffle(buildCluearrPool(names, secret)).forEach(c=>{ if(!seenText.has(c.text)){ seenText.add(c.text); uniquePool.push(c); } });
+  const maxClues = tier==='low' ? 4 : (tier==='medium' ? 5 : (tier==='high' ? 6 : 8));
+  const minClues = tier==='low' ? 3 : (tier==='medium' ? 4 : (tier==='high' ? 5 : 6));
+  let chosen = [], result = { count: allPerms.length, matchIdx:-1 };
+  for(const c of uniquePool){
+    chosen.push(c);
+    if(chosen.length>=minClues){ result = countConsistentPerms(allPerms, chosen); if(result.count===1) break; }
+    if(chosen.length>=maxClues) break;
+  }
+  if(result.count!==1) return null;
+  const solved = allPerms[result.matchIdx];
+  const qType = pick(['position','neighborRight','neighborLeft','leftmost','rightmost']);
+  let questionText, correct;
+  if(qType==='position'){ const t=randInt(0,nPeople-1); questionText=`Siapa yang berada di posisi ke-${t+1}?`; correct=solved[t]; }
+  else if(qType==='neighborRight'){ const idx=randInt(0,nPeople-2); questionText=`Siapa yang berada tepat di sebelah kanan ${solved[idx]}?`; correct=solved[idx+1]; }
+  else if(qType==='neighborLeft'){ const idx=randInt(1,nPeople-1); questionText=`Siapa yang berada tepat di sebelah kiri ${solved[idx]}?`; correct=solved[idx-1]; }
+  else if(qType==='leftmost'){ questionText=`Siapa yang berada paling kiri (posisi 1)?`; correct=solved[0]; }
+  else { questionText=`Siapa yang berada paling kanan (posisi ${nPeople})?`; correct=solved[nPeople-1]; }
+  const options = shuffle(names);
+  const narrative = `${nPeople} orang — ${names.join(', ')} — duduk berjejer di sebuah bangku panjang bernomor 1 sampai ${nPeople} dari kiri ke kanan. Diketahui: ${chosen.map(c=>c.text).join('; ')}.`;
+  const explanation = `Susun langkah demi langkah dari petunjuk paling spesifik (posisi pasti atau "tepat di sebelah") dulu, baru petunjuk relatif. Urutan yang cocok dengan SEMUA petunjuk: ${solved.join(' - ')} (posisi 1 sampai ${nPeople}). ${questionText} Jawabannya <b>${correct}</b>.`;
+  const trick = `Gambar ${nPeople} kotak kosong bernomor di kertas coretan. Isi dulu petunjuk yang paling PASTI (posisi eksak atau "tepat di sebelah"), baru pakai sisa petunjuk untuk mengisi kotak yang tersisa satu per satu.`;
+  return { premises: narrative, options, correct, explanation, trick, questionText };
+}
+function genArrangementItem(tier){
+  for(let i=0;i<15;i++){ const r = genArrangementItemRaw(tier); if(r) return r; }
+  // extremely unlikely fallback: force a trivially simple 3-person puzzle (always solvable in 2 clues)
+  const names = shuffle(ARRANGEMENT_NAMES).slice(0,3);
+  const secret = shuffle(names);
+  return { premises: `3 orang — ${names.join(', ')} — duduk berjejer bernomor 1-3. Diketahui: ${names[0]} di posisi ${secret.indexOf(names[0])+1}; ${names[1]} di posisi ${secret.indexOf(names[1])+1}.`,
+    options: shuffle(names), correct: secret[0], explanation:`Urutan: ${secret.join(' - ')}.`, trick:'Isi posisi yang disebutkan langsung, sisanya otomatis.', questionText:'Siapa di posisi 1?' };
+}
+
+/* =========================================================
+   ASSIGNMENT PUZZLE (via exclusion clues) — verified against
+   real PCPM material: N people assigned to N categories, told
+   via "X is NOT category C" lists (+ 1 direct clue), unique
+   solution confirmed by brute force before use.
+   ========================================================= */
+const PEOPLE_NAMES = ['Umar','Vira','Wanda','Xavi','Yusak','Rendra','Sasa'];
+const CATEGORY_MEJA = ['Kurs','Kredit','Investasi','Digitalisasi','Inflasi','Ekspor','Reksadana'];
+
+function genAssignmentItemRaw(tier){
+  const n = tier==='low'?4:(tier==='medium'?5:(tier==='high'?5:6));
+  const people = shuffle(PEOPLE_NAMES).slice(0,n);
+  const categories = shuffle(CATEGORY_MEJA).slice(0,n);
+  const secretPerm = shuffle(categories);
+  const secret = {}; people.forEach((p,i)=> secret[p]=secretPerm[i]);
+  const allPerms = permutations(categories);
+
+  const notPool = [];
+  people.forEach(p=> categories.forEach(c=>{ if(secret[p]!==c) notPool.push({person:p, cat:c}); }));
+  const shuffledPool = shuffle(notPool);
+  const directPerson = pick(people);
+  const clues = [{ type:'pos', person:directPerson, cat:secret[directPerson] }];
+
+  function checkUnique(clueList){
+    let count=0, matchIdx=-1;
+    for(let k=0;k<allPerms.length;k++){
+      const assign={}; people.forEach((p,i)=>assign[p]=allPerms[k][i]);
+      let ok=true;
+      for(const cl of clueList){
+        if(cl.type==='pos'){ if(assign[cl.person]!==cl.cat){ ok=false; break; } }
+        else { if(assign[cl.person]===cl.cat){ ok=false; break; } }
+      }
+      if(ok){ count++; matchIdx=k; if(count>1) break; }
+    }
+    return { count, matchIdx };
+  }
+  const minClues = tier==='low' ? 3 : (tier==='medium' ? 4 : (tier==='high' ? 5 : 6));
+  let result = checkUnique(clues);
+  let idx=0;
+  while((result.count!==1 || clues.length<minClues) && idx<shuffledPool.length){
+    const cand = shuffledPool[idx]; idx++;
+    if(cand.person===directPerson) continue;
+    if(clues.some(c=>c.type==='not' && c.person===cand.person && c.cat===cand.cat)) continue;
+    clues.push({ type:'not', person:cand.person, cat:cand.cat });
+    result = checkUnique(clues);
+  }
+  if(result.count!==1) return null;
+  const solved = {}; people.forEach((p,i)=> solved[p]=allPerms[result.matchIdx][i]);
+
+  const notByPerson = {};
+  clues.filter(c=>c.type==='not').forEach(c=>{ notByPerson[c.person]=notByPerson[c.person]||[]; notByPerson[c.person].push(c.cat); });
+  const notTexts = Object.keys(notByPerson).map(p=> `${p} dipastikan tidak duduk di meja bertema ${notByPerson[p].join(', ')}.`);
+  const posTexts = clues.filter(c=>c.type==='pos').map(c=> `${c.person} duduk di meja bertema ${c.cat}.`);
+  const narrative = `${n} orang — ${people.join(', ')} — menempati ${n} meja diskusi dengan tema berbeda: ${categories.join(', ')}. Seluruh penempatan diinformasikan melalui daftar berikut: ${[...notTexts, ...posTexts].join(' ')}`;
+
+  const askPerson = pick(people);
+  const askIsTrue = Math.random()<0.5;
+  const askCat = askIsTrue ? solved[askPerson] : pick(categories.filter(c=>c!==solved[askPerson]));
+  const questionText = `Pernyataan: ${askPerson} duduk di meja bertema ${askCat}.`;
+  const correct = askIsTrue ? 'Benar' : 'Salah';
+  const explanation = `Susunan yang cocok dengan semua petunjuk: ${people.map(p=>p+'='+solved[p]).join(', ')}. Jadi pernyataan ini <b>${correct}</b>.`;
+  const trick = `Cari dulu orang dengan petunjuk "tidak" TERBANYAK — biasanya dia paling cepat ditentukan lewat eliminasi. Baru pakai hasil itu untuk mempersempit sisanya satu per satu.`;
+  return { narrative, questionText, correct, options:['Benar','Salah'], explanation, trick };
+}
+function genAssignmentItem(tier){
+  for(let i=0;i<15;i++){ const r = genAssignmentItemRaw(tier); if(r) return r; }
+  return { narrative:'Dua orang, Umar dan Vira, menempati 2 meja: Kurs dan Kredit. Umar tidak duduk di meja Kurs.', questionText:'Pernyataan: Umar duduk di meja Kredit.', correct:'Benar', options:['Benar','Salah'], explanation:'Karena Umar bukan Kurs, otomatis Umar Kredit.', trick:'Eliminasi langsung.' };
+}
+
+/* =========================================================
+   ROUND-ROBIN TOURNAMENT PUZZLE — verified against real PCPM
+   material: full round-robin results + point tally + True/False
+   about final standings (avoids asking about ties).
+   ========================================================= */
+const TEAM_NAMES = ['Alpha','Beta','Gamma','Delta','Epsilon','Zeta','Eta'];
+function genRoundRobinItemRaw(tier){
+  const n = tier==='low'?4:(tier==='medium'?5:(tier==='high'?5:6));
+  const teams = shuffle(TEAM_NAMES).slice(0,n);
+  const points = {}; teams.forEach(t=>points[t]=0);
+  const matchTexts = [];
+  for(let i=0;i<n;i++){
+    for(let j=i+1;j<n;j++){
+      const a=teams[i], b=teams[j];
+      const roll = Math.random();
+      if(roll<0.42){ points[a]+=3; matchTexts.push(`${a} menang atas ${b}.`); }
+      else if(roll<0.84){ points[b]+=3; matchTexts.push(`${a} kalah dari ${b}.`); }
+      else { points[a]+=1; points[b]+=1; matchTexts.push(`${a} bermain seri dengan ${b}.`); }
+    }
+  }
+  const ranked = Object.entries(points).sort((a,b)=>b[1]-a[1]);
+  const qType = pick(['rank1','compare']);
+  let questionText, correct;
+  if(qType==='rank1'){
+    if(ranked.length>=2 && ranked[0][1]===ranked[1][1]) return null;
+    const isTrue = Math.random()<0.5;
+    const team = isTrue ? ranked[0][0] : pick(teams.filter(t=>t!==ranked[0][0]));
+    questionText = `Pernyataan: Tim ${team} menempati peringkat pertama klasemen akhir.`;
+    correct = isTrue ? 'Benar' : 'Salah';
+  } else {
+    const a = pick(teams); const b = pick(teams.filter(t=>t!==a));
+    if(points[a]===points[b]) return null;
+    questionText = `Pernyataan: Tim ${a} memperoleh poin lebih banyak dibandingkan Tim ${b}.`;
+    correct = points[a] > points[b] ? 'Benar' : 'Salah';
+  }
+  const narrative = `${n} tim (${teams.join(', ')}) bertanding format round-robin, setiap tim melawan seluruh tim lain tepat satu kali (total ${n*(n-1)/2} pertandingan), dengan sistem menang=3 poin, seri=1 poin, kalah=0 poin. Seluruh hasil pertandingan: ${matchTexts.join(' ')}`;
+  const standingsTxt = ranked.map(([t,p],i)=> `${i+1}. ${t} (${p} poin)`).join(', ');
+  const explanation = `Tabulasi seluruh hasil ke poin, lalu urutkan. Klasemen akhir: ${standingsTxt}. Jadi pernyataan ini <b>${correct}</b>.`;
+  const trick = `Buat tabel kecil: 1 baris per tim, tambahkan poin tiap kali tim itu disebut menang(+3)/seri(+1)/kalah(+0) sambil membaca hasil satu per satu — jangan hitung ulang dari awal.`;
+  return { narrative, questionText, correct, options:['Benar','Salah'], explanation, trick };
+}
+function genRoundRobinItem(tier){
+  for(let i=0;i<15;i++){ const r = genRoundRobinItemRaw(tier); if(r) return r; }
+  return { narrative:'2 tim bertanding 1 kali. Alpha menang atas Beta.', questionText:'Pernyataan: Alpha peringkat 1.', correct:'Benar', options:['Benar','Salah'], explanation:'Alpha menang, otomatis peringkat 1.', trick:'Langsung.' };
+}
+
+function genVerbalTest(tier){
+  const bankTier = tier==='hyper' ? 'high' : tier;
+  const bank = SYLLOGISM_BANK[bankTier];
+  const pool = [];
+  // draw a mixed pool of "hard puzzle" kinds (each verified unique/correct at generation time)
+  const nHardPuzzles = tier==='low' ? randInt(2,3) : (tier==='medium' ? randInt(3,4) : randInt(4,5));
+  for(let i=0;i<nHardPuzzles;i++){
+    const kind = pick(['syllogism','arrangement','assignment','roundrobin']);
+    if(kind==='syllogism' && pool.filter(p=>p.kind==='syllogism').length < bank.length){
+      const it = pick(shuffle(bank)); pool.push({...it, kind:'syllogism'});
+    } else if(kind==='arrangement'){ pool.push({ ...genArrangementItem(tier), kind:'arrangement' }); }
+    else if(kind==='assignment'){ pool.push({ ...genAssignmentItem(tier), kind:'assignment' }); }
+    else { pool.push({ ...genRoundRobinItem(tier), kind:'roundrobin' }); }
+  }
+  const nTfcs = 10 - pool.length;
+  const tfcsItems = shuffle(VERBAL_BANK[bankTier]).slice(0, Math.max(0,nTfcs)).map(it=>({...it, kind:'tfcs'}));
+  return shuffle([...pool, ...tfcsItems]).slice(0,10);
+}
+
+/* =========================================================
+   SVG shape renderer for diagrammatic reasoning
+   ========================================================= */
+function polygonPoints(sides, cx, cy, r, rot){
+  rot = rot || -Math.PI/2;
+  const pts = [];
+  for(let i=0;i<sides;i++){
+    const a = rot + i*(2*Math.PI/sides);
+    pts.push((cx+r*Math.cos(a)).toFixed(1)+","+(cy+r*Math.sin(a)).toFixed(1));
+  }
+  return pts.join(" ");
+}
+function shapeSVG(shape, size){
+  size = size || 96;
+  const cx=size/2, cy=size/2, r=size*0.34;
+  const fill = shape.filled ? "var(--ink)" : "none";
+  const stroke = "var(--ink)";
+  let inner;
+  if(shape.sides>=9){
+    inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="4"/>`;
+  } else {
+    inner = `<polygon points="${polygonPoints(shape.sides,cx,cy,r)}" fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"/>`;
+  }
+  let dots = "";
+  const dotR = size*0.045;
+  const positions = [[cx,cy],[cx-size*0.12,cy+size*0.06],[cx+size*0.12,cy+size*0.06]];
+  for(let i=0;i<shape.dots;i++){
+    const p = positions[i] || [cx, cy];
+    const dotFill = shape.filled ? "var(--paper)" : "var(--ink)";
+    dots += `<circle cx="${p[0]}" cy="${p[1]}" r="${dotR}" fill="${dotFill}"/>`;
+  }
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">${inner}${dots}</svg>`;
+}
+
+function iconSVG(type, size){
+  size = size || 40;
+  const stroke = 'var(--ink)';
+  let inner='';
+  switch(type){
+    case 'arrowUp': inner = `<line x1="50" y1="82" x2="50" y2="24" stroke="${stroke}" stroke-width="8" stroke-linecap="round"/><polygon points="50,10 33,36 67,36" fill="${stroke}"/>`; break;
+    case 'arrowDown': inner = `<line x1="50" y1="18" x2="50" y2="76" stroke="${stroke}" stroke-width="8" stroke-linecap="round"/><polygon points="50,90 33,64 67,64" fill="${stroke}"/>`; break;
+    case 'hookCurl': inner = `<path d="M30,25 Q28,80 72,68" stroke="${stroke}" stroke-width="8" fill="none" stroke-linecap="round"/>`; break;
+    case 'crossX': inner = `<line x1="25" y1="25" x2="75" y2="75" stroke="${stroke}" stroke-width="9" stroke-linecap="round"/><line x1="75" y1="25" x2="25" y2="75" stroke="${stroke}" stroke-width="9" stroke-linecap="round"/>`; break;
+    case 'circleFilled': inner = `<circle cx="50" cy="50" r="30" fill="${stroke}"/>`; break;
+    case 'circleRinged': inner = `<circle cx="50" cy="50" r="32" fill="none" stroke="${stroke}" stroke-width="6"/><circle cx="50" cy="50" r="13" fill="${stroke}"/>`; break;
+    case 'circleLined': inner = `<circle cx="50" cy="50" r="30" fill="none" stroke="${stroke}" stroke-width="6"/><line x1="20" y1="50" x2="80" y2="50" stroke="${stroke}" stroke-width="6"/>`; break;
+    case 'cardSpade': inner = `<path d="M50,14 C26,38 20,58 40,66 C45,68 48,66 50,61 C52,66 55,68 60,66 C80,58 74,38 50,14 Z" fill="${stroke}"/><line x1="50" y1="63" x2="50" y2="86" stroke="${stroke}" stroke-width="5" stroke-linecap="round"/>`; break;
+    case 'triangleSolid': inner = `<polygon points="50,15 15,80 85,80" fill="${stroke}"/>`; break;
+    case 'triangleOutline': inner = `<polygon points="50,15 15,80 85,80" fill="none" stroke="${stroke}" stroke-width="6" stroke-linejoin="round"/>`; break;
+    case 'triangleDown': inner = `<polygon points="50,85 15,20 85,20" fill="none" stroke="${stroke}" stroke-width="6" stroke-linejoin="round"/>`; break;
+    case 'shieldSolid': inner = `<path d="M50,12 L82,25 L82,50 Q82,78 50,90 Q18,78 18,50 L18,25 Z" fill="${stroke}"/>`; break;
+    case 'zigzagN': inner = `<polyline points="25,75 25,25 75,75 75,25" fill="none" stroke="${stroke}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`; break;
+    case 'circledLetter': inner = `<circle cx="50" cy="50" r="32" fill="none" stroke="${stroke}" stroke-width="6"/><text x="50" y="63" font-size="32" font-family="monospace" font-weight="700" text-anchor="middle" fill="${stroke}">C</text>`; break;
+    case 'cameraRect': inner = `<rect x="16" y="35" width="46" height="32" fill="none" stroke="${stroke}" stroke-width="6"/><polygon points="64,42 86,32 86,68 64,58" fill="${stroke}"/>`; break;
+    case 'runeY': inner = `<line x1="50" y1="45" x2="50" y2="85" stroke="${stroke}" stroke-width="7" stroke-linecap="round"/><line x1="50" y1="45" x2="28" y2="15" stroke="${stroke}" stroke-width="7" stroke-linecap="round"/><line x1="50" y1="45" x2="72" y2="15" stroke="${stroke}" stroke-width="7" stroke-linecap="round"/>`; break;
+    case 'commaSolid': inner = `<path d="M55,28 Q76,28 70,54 Q64,76 44,82 Q64,60 49,50 Q39,44 45,29 Q49,24 55,28 Z" fill="${stroke}"/>`; break;
+    case 'ariesSymbol': inner = `<path d="M30,18 Q18,45 35,56 Q41,59 41,66 L41,86" stroke="${stroke}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M70,18 Q82,45 65,56 Q59,59 59,66 L59,86" stroke="${stroke}" stroke-width="6" fill="none" stroke-linecap="round"/>`; break;
+    case 'diamondOutline': inner = `<polygon points="50,14 86,50 50,86 14,50" fill="none" stroke="${stroke}" stroke-width="6" stroke-linejoin="round"/>`; break;
+    case 'diamondSolid': inner = `<polygon points="50,14 86,50 50,86 14,50" fill="${stroke}"/>`; break;
+    case 'starSolid': {
+      let pts=[];
+      for(let i=0;i<10;i++){ const ang=-Math.PI/2 + i*Math.PI/5; const r = i%2===0?36:15; pts.push((50+r*Math.cos(ang)).toFixed(1)+','+(50+r*Math.sin(ang)).toFixed(1)); }
+      inner = `<polygon points="${pts.join(' ')}" fill="${stroke}"/>`;
+      break;
+    }
+    default: inner = `<circle cx="50" cy="50" r="30" fill="none" stroke="${stroke}" stroke-width="6"/>`;
+  }
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">${inner}</svg>`;
+}
+
+/* export to global for use in the HTML shell */
+/* =========================================================
+   SPATIAL REASONING (predicted new subtest) — mental rotation
+   & mirror-image detection. Correctness is guaranteed by
+   coordinate computation, not hand-drawn assumptions: a random
+   5-cell polygon shape is checked to be truly CHIRAL (its
+   mirror can never be reached by any rotation) before use.
+   ========================================================= */
+const SPATIAL_N = 4; // bounding grid size for generated polyomino shapes
+function spatialNormalize(cells){
+  const minX=Math.min(...cells.map(c=>c[0])), minY=Math.min(...cells.map(c=>c[1]));
+  return cells.map(([x,y])=>[x-minX,y-minY]).sort((a,b)=> a[0]-b[0]||a[1]-b[1]);
+}
+function spatialRotate90(cells){ return cells.map(([x,y])=>[y, SPATIAL_N-1-x]); }
+function spatialMirror(cells){ return cells.map(([x,y])=>[SPATIAL_N-1-x,y]); }
+function spatialKey(cells){ return spatialNormalize(cells).map(c=>c.join(',')).join('|'); }
+function spatialAllRotations(cells){ const out=[]; let cur=cells; for(let i=0;i<4;i++){ out.push(spatialNormalize(cur)); cur=spatialRotate90(cur); } return out; }
+function spatialIsChiral(cells){
+  const rotSet = new Set(spatialAllRotations(cells).map(spatialKey));
+  const mirFamily = spatialAllRotations(spatialMirror(cells)).map(spatialKey);
+  return !mirFamily.some(k=>rotSet.has(k));
+}
+function spatialRandomShape(nCells){
+  const all=[]; for(let x=0;x<SPATIAL_N;x++) for(let y=0;y<SPATIAL_N;y++) all.push([x,y]);
+  return shuffle(all).slice(0,nCells);
+}
+function genChiralShape(nCells){
+  for(let i=0;i<200;i++){ const s = spatialNormalize(spatialRandomShape(nCells)); if(spatialIsChiral(s)) return s; }
+  // fallback: a guaranteed-chiral hand-built L+notch pentomino
+  return spatialNormalize([[0,0],[0,1],[0,2],[1,2],[1,3]]);
+}
+function genSpatialItem(tier){
+  const nCells = tier==='low'?4:(tier==='medium'?5:(tier==='high'?5:6));
+  const base = genChiralShape(nCells);
+  const rotFamily = spatialAllRotations(base); // 4 same-chirality variants
+  const mirFamily = spatialAllRotations(spatialMirror(base)); // 4 opposite-chirality variants
+  const nOptions = tier==='low'?4:5;
+  const wrongIdx = randInt(0,nOptions-1);
+  const optionShapes = [];
+  const usedKeys = new Set();
+  for(let i=0;i<nOptions;i++){
+    let shape;
+    if(i===wrongIdx){ shape = pick(mirFamily); }
+    else {
+      let guard=0;
+      do{ shape = pick(rotFamily); guard++; } while(usedKeys.has(spatialKey(shape)) && guard<20);
+    }
+    usedKeys.add(spatialKey(shape));
+    optionShapes.push(shape);
+  }
+  const referenceShape = pick(rotFamily);
+  const correct = wrongIdx+1;
+  const explanation = `Bentuk acuan hanya boleh diputar (rotasi), tidak boleh dicerminkan (dibalik). Opsi di posisi <b>${correct}</b> sebenarnya adalah bentuk acuan yang DICERMINKAN (mirror) — perhatikan arah "belokan" bentuknya terbalik dibanding bentuk acuan, secermat apapun diputar hasilnya tidak akan pernah sama persis.`;
+  const trick = `Cari 1 titik/sudut yang menonjol/khas di bentuk acuan (misal ujung yang menonjol ke satu arah). Bayangkan memutar bentuk itu di kepala — kalau ada opsi yang "kidal" dibanding bentuk acuan (arah belokannya kebalik), itu pasti hasil cerminan, bukan rotasi.`;
+  return { referenceShape, optionShapes, correct, options:[1,2,3,4,5].slice(0,nOptions), explanation, trick };
+}
+function spatialShapeSVG(cells, size){
+  size = size||90;
+  const cell = size/SPATIAL_N;
+  let rects = cells.map(([x,y])=> `<rect x="${x*cell+1}" y="${y*cell+1}" width="${cell-2}" height="${cell-2}" rx="2" fill="var(--ink)"/>`).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">${rects}</svg>`;
+}
+
+window.PCPM = {
+  $, $all, el, randInt, pick, shuffle, fmtTime, fmtSec,
+  loadTrack, saveTrack, recordAttempt, masteryOf, emptyStats,
+  SUBTESTS, TIERS,
+  genDigitSymbolTest, genNumericalItem, genDiagramItem, genVerbalTest, verbalExplain, VERBAL_TRICK, SYLLOGISM_TRICK,
+  shapeSVG, iconSVG, genSpatialItem, spatialShapeSVG
+};
+})();
+
+</script>
+<script>
+(function(){
+"use strict";
+const P = window.PCPM;
+const { el, fmtTime, fmtSec } = P;
+
+const root = document.getElementById('app');
+let TRACK = {};
+let RUN = null;
+let RESET_ARMED = false;
+
+/* ---------------- INIT ---------------- */
+async function init(){
+  TRACK = await P.loadTrack();
+  renderHome();
+}
+
+/* ---------------- HOME / DASHBOARD ---------------- */
+function statsFor(subtestKey, tierKey){
+  return (TRACK[subtestKey] && TRACK[subtestKey][tierKey]) || null;
+}
+function stampNode(mastery){
+  return el('span',{class:'stamp stamp-'+mastery.tone}, [mastery.label]);
+}
+function fmtMinutes(m){ return (Number.isInteger(m)? m : m.toFixed(1)) + ' menit'; }
+
+function renderHome(){
+  root.innerHTML = '';
+  root.appendChild(el('header',{class:'ticket'},[
+    el('div',{class:'ticket-eyebrow'},['SIMULASI RESMI · SELEKSI POTENSI DASAR']),
+    el('h1',{class:'ticket-title'},['Simulasi Tes Potensi Dasar']),
+    el('div',{class:'ticket-sub'},['PCPM Bank Indonesia — 4 Subtes · Timer Asli · Bank Soal Tanpa Batas']),
+  ]));
+
+  root.appendChild(el('section',{class:'intro card'},[
+    el('p',{},['Setiap kali kamu klik "Mulai", soal baru yang unik akan dibuat otomatis — dan tiap subtes kini punya ',
+      el('b',{},['lebih dari satu pola soal']),
+      ' (bukan cuma 1 mekanisme yang diulang), supaya lebih mendekati variasi tes asli. Tiap subtes tetap memakai jumlah soal & waktu ',
+      el('b',{},['persis seperti spesifikasi tes asli']),
+      '.'
+    ]),
+    el('div',{class:'legend-row'},[
+      el('span',{class:'legend-item'},[stampNode({tone:'good',label:'Sudah Dikuasai'}), ' akurasi ≥ 80%']),
+      el('span',{class:'legend-item'},[stampNode({tone:'warn',label:'Perlu Ditingkatkan'}), ' akurasi 50–79%']),
+      el('span',{class:'legend-item'},[stampNode({tone:'bad',label:'Masih Sulit'}), ' akurasi < 50%']),
+      el('span',{class:'legend-item'},[stampNode({tone:'neutral',label:'Belum Dicoba'}), ' —']),
+    ]),
+    el('p',{class:'small muted', style:'margin-top:10px;'},['🔒 Level ',el('b',{},['Hyper']),' otomatis terbuka begitu akurasimu di level High mencapai ≥80% — jadi latihanmu makin susah seiring kamu makin jago, bukan mentok di satu level.'])
+  ]));
+
+  const grid = el('div',{class:'subtest-grid'});
+  Object.values(P.SUBTESTS).forEach(st=> grid.appendChild(subtestCard(st)));
+  root.appendChild(grid);
+
+  root.appendChild(renderBackupSection());
+
+  root.appendChild(el('div',{class:'home-footer'},[
+    el('button',{class:'link-btn', onclick: onResetClick},[RESET_ARMED?'Klik sekali lagi untuk konfirmasi reset':'Reset semua progress']),
+    el('span',{class:'muted small'},[' · Progress otomatis tersimpan HANYA selama file dibuka dari dalam chat.'])
+  ]));
+}
+
+function encodeTrack(track){
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(track)))); }
+  catch(e){ return ''; }
+}
+function decodeTrack(code){
+  try {
+    const parsed = JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
+    if(parsed && typeof parsed==='object') return parsed;
+    return null;
+  } catch(e){ return null; }
+}
+function renderBackupSection(){
+  const card = el('section',{class:'card backup-card'});
+  card.appendChild(el('div',{class:'ticket-eyebrow'},['CADANGAN PROGRESS']));
+  card.appendChild(el('p',{class:'small muted'},[
+    'Progress otomatis TIDAK selalu tersimpan kalau file ini dibuka lewat aplikasi Files/galeri di HP (di luar chat). Supaya aman: salin kode di bawah sebelum menutup halaman, lalu tempel lagi saat membuka ulang.'
+  ]));
+  const hasData = Object.keys(TRACK).length>0;
+  const codeBox = el('textarea',{class:'backup-code', readonly:'readonly', rows:'2'});
+  codeBox.value = hasData ? encodeTrack(TRACK) : '(belum ada progress untuk dicadangkan)';
+  card.appendChild(codeBox);
+  card.appendChild(el('div',{class:'btn-row'},[
+    el('button',{class:'btn-ghost', onclick:()=>{
+      codeBox.focus(); codeBox.select();
+      try{ navigator.clipboard.writeText(codeBox.value); }catch(e){ try{ document.execCommand('copy'); }catch(e2){} }
+    }},['Salin Kode Cadangan'])
+  ]));
+
+  card.appendChild(el('div',{class:'q-instr2 muted small', style:'margin-top:16px;'},['Pulihkan dari kode cadangan:']));
+  const importBox = el('textarea',{class:'backup-code', rows:'2', placeholder:'Tempel kode cadangan di sini...'});
+  card.appendChild(importBox);
+  const importMsg = el('div',{class:'small', style:'margin-top:6px;'});
+  card.appendChild(importMsg);
+  card.appendChild(el('div',{class:'btn-row'},[
+    el('button',{class:'btn-primary', onclick: async ()=>{
+      const parsed = decodeTrack(importBox.value);
+      if(parsed){
+        TRACK = parsed;
+        await P.saveTrack(TRACK);
+        renderHome();
+      } else {
+        importMsg.textContent = 'Kode tidak valid — pastikan disalin lengkap tanpa terpotong.';
+        importMsg.className = 'small err-text';
+      }
+    }},['Pulihkan Progress'])
+  ]));
+  return card;
+}
+
+function onResetClick(){
+  if(!RESET_ARMED){ RESET_ARMED = true; renderHome(); setTimeout(()=>{ RESET_ARMED=false; }, 4000); }
+  else { RESET_ARMED = false; TRACK = {}; P.saveTrack(TRACK); renderHome(); }
+}
+
+function subtestCard(st){
+  const card = el('article',{class:'ledger-card'});
+  card.appendChild(el('div',{class:'ledger-head'},[
+    el('span',{class:'glyph'},[st.glyph]),
+    el('div',{},[ el('div',{class:'ledger-title'},[st.label]), el('div',{class:'ledger-sub'},[st.sub]) ]),
+    el('div',{class:'ledger-spec'},[st.count+' soal · '+fmtMinutes(st.minutes)])
+  ]));
+  const rows = el('div',{class:'tier-rows'});
+  P.TIERS.forEach(tier=>{
+    const stats = statsFor(st.key, tier.key);
+    const mastery = P.masteryOf(stats);
+    const accTxt = stats && stats.total>0 ? Math.round(100*stats.correct/stats.total)+'% akurasi · '+stats.attempts+'x dicoba' : 'Belum ada data';
+    const highStats = statsFor(st.key, 'high');
+    const highMastered = highStats && highStats.total>0 && (highStats.correct/highStats.total) >= 0.8;
+    const isLocked = tier.key==='hyper' && !highMastered;
+    if(isLocked){
+      rows.appendChild(el('div',{class:'tier-row tier-row-locked'},[
+        el('div',{class:'tier-name'},['🔒 '+tier.label]),
+        el('div',{class:'tier-stat muted small'},['Kuasai High dulu (akurasi ≥80%) untuk membuka level ini']),
+        el('span',{class:'stamp stamp-neutral'},['Terkunci']),
+        el('button',{class:'btn-mini btn-mini-disabled', disabled:'disabled'},['Mulai'])
+      ]));
+    } else {
+      rows.appendChild(el('div',{class:'tier-row'},[
+        el('div',{class:'tier-name'},[tier.label]),
+        el('div',{class:'tier-stat muted small'},[accTxt]),
+        stampNode(mastery),
+        el('button',{class:'btn-mini', onclick:()=>startInstructions(st.key, tier.key)},['Mulai'])
+      ]));
+    }
+  });
+  card.appendChild(rows);
+  return card;
+}
+
+/* ---------------- INSTRUCTIONS ---------------- */
+const INSTRUCTIONS = {
+  spatial: { title:'Cara Mengerjakan: Spatial Reasoning',
+    body:[
+      'Ini subtes PREDIKSI (belum ada bukti resmi, dibangun berdasarkan pola "+15 menit per subtes baru" dari PCPM 39→40→41).',
+      'Sebuah bentuk acuan ditampilkan. Beberapa opsi adalah bentuk itu yang DIPUTAR (rotasi) — tetap sah. TEPAT SATU opsi adalah bentuk itu yang DICERMINKAN (mirror/dibalik) — itu yang harus kamu temukan. Total 10 soal dalam 15 menit.'
+    ],
+    trick:'Cari 1 sudut/ujung paling menonjol di bentuk acuan. Bayangkan memutarnya — kalau ada opsi yang arah "belokannya" terbalik (kidal) dibanding bentuk acuan, itu hasil cerminan.'
+  },
+  digit: { title:'Cara Mengerjakan: Digit Symbol',
+    body:[
+      'Kunci berisi pasangan KODE ↔ GAMBAR yang tetap terlihat sepanjang tes. Kodenya campuran ANGKA (di level tinggi bisa lebih dari 9, misalnya sampai 12) dan HURUF (A, B, C, ...) — semakin tinggi levelnya, semakin banyak kode yang harus diingat sekaligus.',
+      'Ada 4 pola soal yang bercampur: (1) lihat kode → pilih gambar yang cocok, ATAU lihat gambar → KETIK kodenya (persis format tes coding asli), (2) verifikasi sebuah pasangan sesuai kunci atau tidak, (3) hitung berapa dari beberapa pasangan yang sesuai kunci, dan (4) cari 1 pasangan yang salah dari beberapa pasangan. Total 35 soal dalam 7 menit (± 12 detik/soal).'
+    ],
+    trick:'Jangan hafal semua kode sekaligus. Pilih 2–3 gambar paling "unik" (misalnya yang isi/solid atau sisinya paling banyak) sebagai jangkar hafalan dulu, kerjakan soal yang memuat kode itu duluan, lalu isi sisanya sambil melirik kunci.'
+  },
+  numerical: { title:'Cara Mengerjakan: Numerical Reasoning',
+    body:[
+      'Ada 2 pola soal yang bercampur: (1) tabel angka 3×3/4×4 dengan satu sel kosong, dan (2) deret angka berurutan yang harus dilanjutkan.',
+      'Temukan pola pada baris/kolom (untuk tabel) atau pada selisih antar suku (untuk deret), lalu pilih jawaban yang tepat. Total 10 soal dalam 10 menit.'
+    ],
+    trick:'Untuk tabel: cek selisih 1 baris/kolom lengkap dulu. Untuk deret: hitung selisih antar suku berurutan — kalau tidak tetap, coba "selisih dari selisih", pola Fibonacci, atau pisahkan jadi 2 deret selang-seling.'
+  },
+  verbal: { title:'Cara Mengerjakan: Verbal Reasoning',
+    body:[
+      'Ada 3 pola soal yang bercampur: (1) True/False/Cannot Say berdasarkan paragraf singkat, (2) silogisme pilihan ganda (pilih kesimpulan yang PASTI benar dari premis), dan (3) soal susunan/urutan posisi — cerita lebih panjang dengan beberapa orang dan banyak petunjuk (posisi pasti, sebelah kiri/kanan, tidak bersebelahan, dsb), lalu ditanya posisi salah satu orang.',
+      'Total 10 soal dalam 12 menit — soal susunan biasanya butuh waktu paling lama karena petunjuknya harus disusun satu-satu.'
+    ],
+    trick:'Untuk soal susunan: coret dulu di kepala/coretan posisi yang PASTI (disebutkan eksak atau "tepat di sebelah"), baru pakai petunjuk relatif ("di sebelah kiri", "tidak bersebelahan") untuk mengisi sisanya satu per satu.'
+  },
+  diagram: { title:'Cara Mengerjakan: Diagrammatical Reasoning',
+    body:[
+      'Ada 4 pola soal yang bercampur: (1) klasifikasi ke Kelompok X/Y/Bukan Keduanya, (2) melanjutkan pola gambar berurutan, (3) mencari 1 bentuk yang menyimpang dari 4 lainnya, dan (4) melengkapi matriks 3×3 gaya Raven Matrices — ini yang paling sulit secara spasial.',
+      'Total 10 soal dalam 7,5 menit.'
+    ],
+    trick:'Untuk matriks: cek dulu perubahan antar KOLOM (menyamping), lalu antar BARIS (menurun), secara terpisah — jangan campur. Untuk cari-yang-menyimpang: bandingkan 1 ciri (sisi/isi/titik) di semua bentuk sekaligus, bukan berpasangan.'
+  }
+};
+
+function startInstructions(subtestKey, tierKey){
+  root.innerHTML='';
+  const st = P.SUBTESTS[subtestKey];
+  const tier = P.TIERS.find(t=>t.key===tierKey);
+  const info = INSTRUCTIONS[subtestKey];
+  const wrap = el('section',{class:'instructions card'});
+  wrap.appendChild(el('div',{class:'ticket-eyebrow'},[st.label.toUpperCase()+' · TINGKAT '+tier.label.toUpperCase()]));
+  wrap.appendChild(el('h2',{},[info.title]));
+  info.body.forEach(p=> wrap.appendChild(el('p',{},[p])));
+  wrap.appendChild(el('div',{class:'trick-box'},[el('b',{},['Trik cepat: ']), info.trick]));
+  wrap.appendChild(el('p',{class:'muted small'},['Timer mulai berjalan begitu kamu menekan tombol di bawah. Soal tidak bisa diulang mundur — jawab lalu lanjut ke soal berikutnya, persis seperti tes asli.']));
+  wrap.appendChild(el('div',{class:'btn-row'},[
+    el('button',{class:'btn-ghost', onclick: renderHome},['← Kembali']),
+    el('button',{class:'btn-primary', onclick:()=>startRun(subtestKey, tierKey)},['Mulai Sekarang ('+st.count+' soal · '+fmtMinutes(st.minutes)+')'])
+  ]));
+  root.appendChild(wrap);
+}
+
+/* =========================================================
+   SNAPSHOT BUILDERS — normalize a raw generated item into a
+   shape that BOTH the live runner and the review recap can
+   render identically via renderQuestionBody().
+   ========================================================= */
+function makeDigitSnapshot(item){
+  const explanation = `Terjemahkan tiap ikon ke hurufnya sesuai kunci: ${item.seqLetters.map(l=>l).join('-')} → jawabannya adalah string <b>${item.correct}</b>. Cek posisi pertama dan terakhir dulu untuk mencoret opsi yang jelas salah, baru pastikan posisi tengahnya.`;
+  const trick = `Jangan terjemahkan SEMUA ikon dulu baru cocokkan ke opsi. Cocokkan ikon PERTAMA saja ke semua opsi dulu (coret yang huruf pertamanya beda), lalu ikon TERAKHIR — biasanya sisa 1-2 opsi saja yang perlu dicek detail.`;
+  return { type:'digit', seqIcons:item.seqIcons, key:item.key, options:item.options, correct:item.correct, len:item.len, explanation, trick };
+}
+function makeNumericalSnapshot(item){
+  if(item.format==='series') return { type:'numerical', format:'series', shown:item.shown, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+  if(item.format==='oddOneOut') return { type:'numerical', format:'oddOneOut', nums:item.nums, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+  if(item.format==='analogy') return { type:'numerical', format:'analogy', a:item.a, b:item.b, c:item.c, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+  return { type:'numerical', format:'grid', grid:item.grid, blankR:item.blankR, blankC:item.blankC, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+}
+function makeVerbalSnapshot(item){
+  if(item.kind==='syllogism'){
+    return { type:'verbal', format:'syllogism', premises:item.p, options:item.options, correct:item.correctIndex, explanation:item.explanation, trick:P.SYLLOGISM_TRICK };
+  }
+  if(item.kind==='assignment' || item.kind==='roundrobin'){
+    return { type:'verbal', format:'longpuzzle', premises:item.narrative, questionText:item.questionText, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+  }
+  if(item.kind==='arrangement'){
+    return { type:'verbal', format:'arrangement', premises:item.premises, questionText:item.questionText, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+  }
+  return { type:'verbal', format:'tfcs', passage:item.p, statement:item.s, options:['True','False','Cannot Say'], correct:item.a, explanation:P.verbalExplain(item), trick:P.VERBAL_TRICK };
+}
+function makeDiagramSnapshot(item){
+  if(item.format==='sequence') return { type:'diagram', format:'sequence', shownSteps:item.shownSteps, options:item.options, correct:item.correct.key, explanation:item.explanation, trick:item.trick };
+  if(item.format==='oddOneOut') return { type:'diagram', format:'oddOneOut', shapes:item.shapes, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+  if(item.format==='matrix') return { type:'diagram', format:'matrix', grid:item.grid, blankR:item.blankR, blankC:item.blankC, options:item.options, correct:item.correct.key, explanation:item.explanation, trick:item.trick };
+  if(item.format==='figure2x2') return { type:'diagram', format:'figure2x2', exX:item.exX, exY:item.exY, target:item.target, options:['X','Y','N'], correct:item.answer, explanation:item.explanation, trick:item.trick };
+  return { type:'diagram', format:'classify', exX:item.exX, exY:item.exY, target:item.target, options:['X','Y','N'], correct:item.answer, explanation:item.explanation, trick:item.trick };
+}
+function makeSpatialSnapshot(item){
+  return { type:'spatial', referenceShape:item.referenceShape, optionShapes:item.optionShapes, options:item.options, correct:item.correct, explanation:item.explanation, trick:item.trick };
+}
+function buildSnapshot(subtestKey, item){
+  if(subtestKey==='digit') return makeDigitSnapshot(item);
+  if(subtestKey==='numerical') return makeNumericalSnapshot(item);
+  if(subtestKey==='verbal') return makeVerbalSnapshot(item);
+  if(subtestKey==='diagram') return makeDiagramSnapshot(item);
+  if(subtestKey==='spatial') return makeSpatialSnapshot(item);
+}
+function shortRepr(qs){
+  if(qs.type==='digit') return 'Decode '+qs.len+' ikon → huruf';
+  if(qs.type==='numerical'){
+    if(qs.format==='series') return 'Deret: '+qs.shown.join(', ')+', ?';
+    if(qs.format==='oddOneOut') return 'Cari angka ganjil: '+qs.nums.join(', ');
+    if(qs.format==='analogy') return `Analogi: ${qs.a}:${qs.b} :: ${qs.c}:?`;
+    return 'Tabel angka, sel baris '+(qs.blankR+1)+' kolom '+(qs.blankC+1);
+  }
+  if(qs.type==='verbal'){
+    if(qs.format==='syllogism') return 'Silogisme: '+qs.premises.slice(0,60)+'…';
+    if(qs.format==='longpuzzle') return qs.questionText;
+    if(qs.format==='arrangement') return 'Susunan posisi: '+qs.questionText;
+    return qs.statement;
+  }
+  if(qs.type==='diagram'){
+    if(qs.format==='sequence') return 'Pola gambar berurutan (4 langkah)';
+    if(qs.format==='oddOneOut') return 'Cari 1 bentuk yang menyimpang dari 5';
+    if(qs.format==='matrix') return 'Matriks 3×3, lengkapi sel kosong';
+    if(qs.format==='figure2x2') return 'Model X/Y — figur majemuk 2×2';
+    return 'Bentuk '+qs.target.sides+' sisi, '+(qs.target.filled?'solid':'outline')+', '+qs.target.dots+' titik';
+  }
+  if(qs.type==='spatial') return 'Rotasi/cermin bentuk';
+  return '';
+}
+
+/* =========================================================
+   UNIFIED QUESTION RENDERER — same function drives both the
+   timed runner (mode:'live') and the post-test recap (mode:'review').
+   ========================================================= */
+function makeOptionButton(label, value, correctValue, opts, extraClass){
+  if(opts.mode==='live'){
+    return el('button',{class:'opt-btn '+(extraClass||''), onclick:()=>opts.onSelect(value)},[label]);
+  }
+  let cls = 'opt-static '+(extraClass||'');
+  if(value===correctValue) cls+=' chip-correct';
+  if(opts.selected!=null && value===opts.selected && value!==correctValue) cls+=' chip-wrong';
+  let suffix='';
+  if(value===opts.selected && value===correctValue) suffix=' ✓';
+  else if(value===opts.selected) suffix=' (jawabanmu)';
+  else if(value===correctValue) suffix=' (kunci)';
+  return el('div',{class:cls},[label+suffix]);
+}
+function buildKeyLegend(codes, key){
+  const legend = el('div',{class:'digit-legend'});
+  codes.forEach(c=>{
+    const pair = el('div',{class:'digit-pair'},[ el('div',{class:'digit-num'},[String(c)]) ]);
+    const symBox = el('div',{class:'digit-sym-box'});
+    symBox.innerHTML = P.shapeSVG(key[c], 32);
+    pair.appendChild(symBox);
+    legend.appendChild(pair);
+  });
+  return legend;
+}
+// Shared renderer for "pick the option that is a shape" (used by diagram sequence & matrix)
+function renderShapeOptionsRow(container, options, correctKey, opts, size){
+  const row = el('div',{class:'option-row'});
+  const LETTERS = 'ABCDEF';
+  options.forEach((optShape,idx)=>{
+    const val = optShape.key;
+    let node;
+    if(opts.mode==='live'){
+      node = el('button',{class:'opt-btn opt-shape', onclick:()=>opts.onSelect(val)});
+    } else {
+      let cls='opt-static opt-shape';
+      if(val===correctKey) cls+=' chip-correct';
+      if(opts.selected!=null && val===opts.selected && val!==correctKey) cls+=' chip-wrong';
+      node = el('div',{class:cls});
+    }
+    node.appendChild(el('div',{class:'opt-letter'},[LETTERS[idx]||String(idx+1)]));
+    const svgWrap = el('div',{class:'opt-shape-svg'});
+    svgWrap.innerHTML = P.shapeSVG(optShape, size||54);
+    node.appendChild(svgWrap);
+    if(opts.mode==='review'){
+      let tag='';
+      if(val===opts.selected && val===correctKey) tag='✓ jawabanmu & kunci';
+      else if(val===opts.selected) tag='jawabanmu';
+      else if(val===correctKey) tag='kunci';
+      if(tag) node.appendChild(el('div',{class:'chip-tag'},[tag]));
+    }
+    row.appendChild(node);
+  });
+  container.appendChild(row);
+}
+
+function renderQuestionBody(container, snap, opts){
+  if(snap.type==='digit') return renderDigitBody(container, snap, opts);
+  if(snap.type==='numerical') return renderNumericalBody(container, snap, opts);
+  if(snap.type==='verbal') return renderVerbalBody(container, snap, opts);
+  if(snap.type==='diagram') return renderDiagramBody(container, snap, opts);
+  if(snap.type==='spatial') return renderSpatialBody(container, snap, opts);
+}
+
+function shapeChip(shape, size){
+  const box = el('span',{class:'inline-shape'});
+  box.innerHTML = P.shapeSVG(shape, size||28);
+  return box;
+}
+
+function pairListNode(pairs, opts, mode){
+  // mode: 'count' shows a check/cross per pair (review only); 'odd' numbers each pair 1..n
+  const list = el('div',{class:'pair-list'});
+  pairs.forEach((p,idx)=>{
+    const item = el('div',{class:'pair-item'},[(mode==='odd'?(idx+1)+'. ':'') + 'Kode '+p.c+' = ']);
+    item.appendChild(shapeChip(p.shown, 26));
+    if(opts.mode==='review'){
+      if(mode==='count'){
+        item.appendChild(el('span',{class:'pair-mark '+(p.isMatch?'mark-good':'mark-bad')},[p.isMatch?' ✓':' ✗']));
+      }
+    }
+    list.appendChild(item);
+  });
+  return list;
+}
+
+function renderDigitBody(container, snap, opts){
+  container.appendChild(el('div',{class:'legend-label muted small'},['KUNCI (A-J)'+(opts.mode==='live'?' — tetap terlihat':'')]));
+  const legend = el('div',{class:'digit-legend'});
+  Object.keys(snap.key).sort().forEach(l=>{
+    const pair = el('div',{class:'digit-pair'},[el('div',{class:'digit-num'},[l])]);
+    const box = el('div',{class:'digit-sym-box'}); box.innerHTML = P.iconSVG(snap.key[l], 32);
+    pair.appendChild(box); legend.appendChild(pair);
+  });
+  container.appendChild(legend);
+  container.appendChild(el('div',{class:'q-instr2 muted small'},['Urutan '+snap.len+' ikon berikut mewakili urutan huruf apa? Pilih string yang benar:']));
+  const seqRow = el('div',{class:'sequence-row icon-sequence-row'});
+  snap.seqIcons.forEach(ic=>{ const box=el('div',{class:'shape-box'}); box.innerHTML=P.iconSVG(ic,52); seqRow.appendChild(box); });
+  container.appendChild(seqRow);
+  const row = el('div',{class:'option-row'});
+  snap.options.forEach(v=> row.appendChild(makeOptionButton(v, v, snap.correct, opts, 'opt-btn-mono')));
+  container.appendChild(row);
+}
+
+function parseTypedAnswer(raw, correctValue){
+  const trimmed = (raw||'').trim();
+  if(trimmed==='') return null;
+  if(typeof correctValue === 'number'){
+    const n = Number(trimmed);
+    return Number.isNaN(n) ? null : n;
+  }
+  return trimmed.toUpperCase();
+}
+function makeTypedInputBlock(correctValue, opts, placeholder){
+  const wrap = el('div',{class:'typed-answer-wrap'});
+  const isNumeric = typeof correctValue === 'number';
+  if(opts.mode==='live'){
+    const input = el('input',{type:'text', inputmode: isNumeric?'numeric':'text', autocomplete:'off', class:'typed-input', placeholder: placeholder || (isNumeric?'Ketik angkanya...':'Ketik kodenya...')});
+    const submit = ()=>{ opts.onSelect(parseTypedAnswer(input.value, correctValue)); };
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); submit(); } });
+    wrap.appendChild(input);
+    wrap.appendChild(el('button',{class:'btn-primary typed-submit', onclick:submit},['Jawab →']));
+    setTimeout(()=>{ try{ input.focus(); }catch(e){} }, 30);
+  } else {
+    const selected = opts.selected;
+    const isCorrect = selected===correctValue;
+    wrap.appendChild(el('div',{class:'typed-review-row'},[
+      el('span',{class:'muted small'},['Jawabanmu: ']),
+      el('span',{class:'typed-review-value '+(selected==null?'':(isCorrect?'text-correct':'text-wrong'))},[selected==null?'(kosong)':String(selected)])
+    ]));
+    if(!isCorrect){
+      wrap.appendChild(el('div',{class:'typed-review-row'},[
+        el('span',{class:'muted small'},['Kunci: ']),
+        el('span',{class:'typed-review-value text-correct'},[String(correctValue)])
+      ]));
+    }
+  }
+  return wrap;
+}
+
+function renderNumericalBody(container, snap, opts){
+  if(snap.format==='series'){
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Lengkapi suku berikutnya dalam deret (ketik jawabannya):']));
+    const row = el('div',{class:'series-row'});
+    snap.shown.forEach(v=> row.appendChild(el('span',{class:'series-num'},[String(v)])));
+    row.appendChild(el('span',{class:'series-num series-blank'},['?']));
+    container.appendChild(row);
+    container.appendChild(makeTypedInputBlock(snap.correct, opts));
+    return;
+
+  } else if(snap.format==='oddOneOut'){
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Satu dari 5 angka berikut TIDAK mengikuti pola yang sama dengan 4 lainnya. Yang mana?']));
+    const row = el('div',{class:'series-row'});
+    snap.nums.forEach((n,idx)=> row.appendChild(el('span',{class:'series-num'},[(idx+1)+'. '+n])));
+    container.appendChild(row);
+    const optRow = el('div',{class:'option-row'});
+    snap.options.forEach(v=> optRow.appendChild(makeOptionButton('Posisi '+v, v, snap.correct, opts, 'opt-btn-wide')));
+    container.appendChild(optRow);
+    return;
+
+  } else if(snap.format==='analogy'){
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Lengkapi analogi angka berikut (ketik jawabannya):']));
+    container.appendChild(el('div',{class:'series-row'},[
+      el('span',{class:'series-num'},[String(snap.a)]),
+      el('span',{class:'analogy-sep'},[':']),
+      el('span',{class:'series-num'},[String(snap.b)]),
+      el('span',{class:'analogy-sep'},['::']),
+      el('span',{class:'series-num'},[String(snap.c)]),
+      el('span',{class:'analogy-sep'},[':']),
+      el('span',{class:'series-num series-blank'},['?'])
+    ]));
+    container.appendChild(makeTypedInputBlock(snap.correct, opts));
+    return;
+
+  } else {
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Lengkapi sel yang kosong (?) — ketik jawabannya:']));
+    const table = el('table',{class:'num-grid'});
+    snap.grid.forEach((rowArr,r)=>{
+      const tr = el('tr',{});
+      rowArr.forEach((val,c)=>{
+        const isBlank = (r===snap.blankR && c===snap.blankC);
+        tr.appendChild(el('td',{class:isBlank?'grid-blank':'grid-cell'},[isBlank?'?':String(val)]));
+      });
+      table.appendChild(tr);
+    });
+    container.appendChild(table);
+    container.appendChild(makeTypedInputBlock(snap.correct, opts));
+    return;
+  }
+}
+
+
+function renderVerbalBody(container, snap, opts){
+  if(snap.format==='syllogism'){
+    container.appendChild(el('p',{class:'verbal-passage'},[snap.premises]));
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Kesimpulan mana yang PASTI benar berdasarkan premis di atas?']));
+    const row = el('div',{class:'syllogism-options'});
+    snap.options.forEach((label,idx)=> row.appendChild(makeOptionButton(label, idx, snap.correct, opts, 'opt-btn-block')));
+    container.appendChild(row);
+    return;
+  }
+  if(snap.format==='arrangement'){
+    container.appendChild(el('p',{class:'verbal-passage arrangement-story'},[snap.premises]));
+    container.appendChild(el('div',{class:'q-instr2 muted small'},[snap.questionText]));
+    const row = el('div',{class:'option-row'});
+    snap.options.forEach(v=> row.appendChild(makeOptionButton(v, v, snap.correct, opts, 'opt-btn-wide')));
+    container.appendChild(row);
+    return;
+  }
+  if(snap.format==='longpuzzle'){
+    container.appendChild(el('p',{class:'verbal-passage arrangement-story'},[snap.premises]));
+    container.appendChild(el('p',{class:'verbal-statement'},[snap.questionText]));
+    const row = el('div',{class:'option-row'});
+    snap.options.forEach(v=> row.appendChild(makeOptionButton(v, v, snap.correct, opts, 'opt-btn-wide')));
+    container.appendChild(row);
+    return;
+  }
+  container.appendChild(el('p',{class:'verbal-passage'},[snap.passage]));
+  container.appendChild(el('p',{class:'verbal-statement'},['Pernyataan: “'+snap.statement+'”']));
+  const row = el('div',{class:'option-row'});
+  snap.options.forEach(v=> row.appendChild(makeOptionButton(v, v, snap.correct, opts, 'opt-btn-wide')));
+  container.appendChild(row);
+}
+
+function renderDiagramBody(container, snap, opts){
+  if(snap.format==='sequence'){
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Lanjutkan pola gambar berikut:']));
+    const seqRow = el('div',{class:'sequence-row'});
+    snap.shownSteps.forEach(s=> seqRow.appendChild(el('div',{class:'shape-box', html:P.shapeSVG(s,60)})));
+    seqRow.appendChild(el('div',{class:'shape-box shape-box-q'},['?']));
+    container.appendChild(seqRow);
+    renderShapeOptionsRow(container, snap.options, snap.correct, opts, 54);
+
+  } else if(snap.format==='oddOneOut'){
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Satu dari 5 bentuk berikut TIDAK memenuhi ciri yang sama dengan 4 lainnya. Yang mana?']));
+    const row = el('div',{class:'sequence-row'});
+    snap.shapes.forEach((s,idx)=>{
+      const box = el('div',{class:'shape-box shape-numbered'});
+      box.innerHTML = P.shapeSVG(s,54);
+      box.appendChild(el('div',{class:'shape-index'},[String(idx+1)]));
+      row.appendChild(box);
+    });
+    container.appendChild(row);
+    const optRow = el('div',{class:'option-row'});
+    snap.options.forEach(v=> optRow.appendChild(makeOptionButton('Posisi '+v, v, snap.correct, opts, 'opt-btn-wide')));
+    container.appendChild(optRow);
+
+  } else if(snap.format==='matrix'){
+    container.appendChild(el('div',{class:'q-instr2 muted small'},['Lengkapi bentuk yang kosong pada matriks 3×3 berikut:']));
+    const table = el('div',{class:'matrix-grid'});
+    snap.grid.forEach((rowArr,r)=>{
+      const rowEl = el('div',{class:'matrix-row'});
+      rowArr.forEach((s,c)=>{
+        const isBlank = (r===snap.blankR && c===snap.blankC);
+        rowEl.appendChild(isBlank ? el('div',{class:'shape-box shape-box-q'},['?']) : el('div',{class:'shape-box', html:P.shapeSVG(s,50)}));
+      });
+      table.appendChild(rowEl);
+    });
+    container.appendChild(table);
+    renderShapeOptionsRow(container, snap.options, snap.correct, opts, 48);
+
+  } else if(snap.format==='figure2x2'){
+    const legendWrap = el('div',{class:'diagram-legend'});
+    const colX = el('div',{class:'diagram-col'},[el('div',{class:'diagram-col-label'},['Model X'])]);
+    snap.exX.forEach(c=> colX.appendChild(el('div',{class:'shape-box', html:figure2x2SVG(c,54)})));
+    const colY = el('div',{class:'diagram-col'},[el('div',{class:'diagram-col-label'},['Model Y'])]);
+    snap.exY.forEach(c=> colY.appendChild(el('div',{class:'shape-box', html:figure2x2SVG(c,54)})));
+    legendWrap.appendChild(colX); legendWrap.appendChild(colY);
+    container.appendChild(legendWrap);
+    container.appendChild(el('div',{class:'diagram-target'},[
+      el('div',{class:'diagram-col-label'},['Bentuk ini termasuk?']),
+      el('div',{class:'shape-box shape-box-lg', html:figure2x2SVG(snap.target,96)})
+    ]));
+    const row = el('div',{class:'option-row'});
+    [['X','Model X'],['Y','Model Y'],['N','Bukan Keduanya']].forEach(([val,label])=>{
+      row.appendChild(makeOptionButton(label, val, snap.correct, opts, 'opt-btn-wide'));
+    });
+    container.appendChild(row);
+
+  } else {
+    const legendWrap = el('div',{class:'diagram-legend'});
+    const colX = el('div',{class:'diagram-col'},[el('div',{class:'diagram-col-label'},['Kelompok X'])]);
+    snap.exX.forEach(s=> colX.appendChild(el('div',{class:'shape-box', html:P.shapeSVG(s,54)})));
+    const colY = el('div',{class:'diagram-col'},[el('div',{class:'diagram-col-label'},['Kelompok Y'])]);
+    snap.exY.forEach(s=> colY.appendChild(el('div',{class:'shape-box', html:P.shapeSVG(s,54)})));
+    legendWrap.appendChild(colX); legendWrap.appendChild(colY);
+    container.appendChild(legendWrap);
+    container.appendChild(el('div',{class:'diagram-target'},[
+      el('div',{class:'diagram-col-label'},['Bentuk ini termasuk?']),
+      el('div',{class:'shape-box shape-box-lg', html:P.shapeSVG(snap.target,96)})
+    ]));
+    const row = el('div',{class:'option-row'});
+    [['X','Kelompok X'],['Y','Kelompok Y'],['N','Bukan Keduanya']].forEach(([val,label])=>{
+      row.appendChild(makeOptionButton(label, val, snap.correct, opts, 'opt-btn-wide'));
+    });
+    container.appendChild(row);
+  }
+}
+function figure2x2SVG(cells, size){
+  size = size||54; const half=size/2, gap=2;
+  const cellSize = half-gap;
+  const pos = [[0,0],[half,0],[0,half],[half,half]];
+  let rects = cells.map((filled,i)=>{
+    const [x,y]=pos[i];
+    return `<rect x="${x+gap/2}" y="${y+gap/2}" width="${cellSize-gap/2}" height="${cellSize-gap/2}" fill="${filled?'var(--ink)':'none'}" stroke="var(--ink)" stroke-width="3"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${rects}</svg>`;
+}
+function renderSpatialBody(container, snap, opts){
+  container.appendChild(el('div',{class:'q-instr2 muted small'},['Bentuk acuan (boleh diputar, TIDAK boleh dicerminkan):']));
+  container.appendChild(el('div',{class:'diagram-target'},[
+    el('div',{class:'shape-box shape-box-lg', html:P.spatialShapeSVG(snap.referenceShape,90)})
+  ]));
+  container.appendChild(el('div',{class:'q-instr2 muted small'},['Satu dari opsi berikut adalah hasil CERMINAN (bukan rotasi murni). Yang mana?']));
+  const row = el('div',{class:'option-row'});
+  snap.optionShapes.forEach((shape,idx)=>{
+    const val = idx+1;
+    let node;
+    if(opts.mode==='live'){ node = el('button',{class:'opt-btn opt-shape', onclick:()=>opts.onSelect(val)}); }
+    else {
+      let cls='opt-static opt-shape';
+      if(val===snap.correct) cls+=' chip-correct';
+      if(opts.selected!=null && val===opts.selected && val!==snap.correct) cls+=' chip-wrong';
+      node = el('div',{class:cls});
+    }
+    node.appendChild(el('div',{class:'opt-letter'},[String(idx+1)]));
+    const svgWrap = el('div',{class:'opt-shape-svg'}); svgWrap.innerHTML = P.spatialShapeSVG(shape,56);
+    node.appendChild(svgWrap);
+    if(opts.mode==='review'){
+      let tag='';
+      if(val===opts.selected && val===snap.correct) tag='✓ jawabanmu & kunci';
+      else if(val===opts.selected) tag='jawabanmu';
+      else if(val===snap.correct) tag='kunci';
+      if(tag) node.appendChild(el('div',{class:'chip-tag'},[tag]));
+    }
+    row.appendChild(node);
+  });
+  container.appendChild(row);
+}
+
+/* ---------------- TEST RUNNER ---------------- */
+function buildQuestions(subtestKey, tierKey){
+  if(subtestKey==='digit'){ const t = P.genDigitSymbolTest(tierKey); return t.items; }
+  if(subtestKey==='numerical'){ const a=[]; for(let i=0;i<10;i++) a.push(P.genNumericalItem(tierKey)); return a; }
+  if(subtestKey==='verbal'){ return P.genVerbalTest(tierKey); }
+  if(subtestKey==='diagram'){ const a=[]; for(let i=0;i<10;i++) a.push(P.genDiagramItem(tierKey)); return a; }
+  if(subtestKey==='spatial'){ const a=[]; for(let i=0;i<10;i++) a.push(P.genSpatialItem(tierKey)); return a; }
+}
+
+
+function startRun(subtestKey, tierKey){
+  const st = P.SUBTESTS[subtestKey];
+  RUN = {
+    subtestKey, tierKey,
+    items: buildQuestions(subtestKey, tierKey),
+    index: 0,
+    answers: [],
+    timeLimitMs: st.minutes*60000,
+    startTs: Date.now(),
+    qShownTs: Date.now(),
+    timerHandle: null,
+    finished: false
+  };
+  RUN.answers = new Array(RUN.items.length).fill(null);
+  renderRunner();
+  RUN.timerHandle = setInterval(tick, 200);
+}
+function remainingMs(){ return Math.max(0, RUN.startTs + RUN.timeLimitMs - Date.now()); }
+function tick(){
+  if(!RUN || RUN.finished) return;
+  const rem = remainingMs();
+  const t = document.getElementById('run-timer');
+  if(t){ t.textContent = fmtTime(rem); t.classList.toggle('timer-danger', rem<30000); }
+  if(rem<=0) finishRun();
+}
+function answerCurrent(selected, qSnapshot){
+  const timeMs = Date.now() - RUN.qShownTs;
+  const correctFlag = selected === qSnapshot.correct;
+  RUN.answers[RUN.index] = { selected, correctFlag, timeMs, qSnapshot, timedOut:false };
+  RUN.index += 1;
+  if(RUN.index >= RUN.items.length) finishRun();
+  else { RUN.qShownTs = Date.now(); renderRunner(); }
+}
+function finishRun(){
+  if(!RUN || RUN.finished) return;
+  RUN.finished = true;
+  clearInterval(RUN.timerHandle);
+  for(let i=RUN.index;i<RUN.items.length;i++){
+    if(!RUN.answers[i]) RUN.answers[i] = { selected:null, correctFlag:false, timeMs:null, qSnapshot: buildSnapshot(RUN.subtestKey, RUN.items[i]), timedOut:true };
+  }
+  renderResults();
+}
+
+function renderRunner(){
+  root.innerHTML='';
+  const st = P.SUBTESTS[RUN.subtestKey];
+  root.appendChild(el('div',{class:'run-bar'},[
+    el('div',{class:'run-bar-left'},[
+      el('span',{class:'run-subtest'},[st.label]),
+      el('span',{class:'run-tier badge'},[P.TIERS.find(t=>t.key===RUN.tierKey).label])
+    ]),
+    el('div',{class:'run-timer', id:'run-timer'},[fmtTime(remainingMs())])
+  ]));
+  const body = el('div',{class:'run-body card'});
+  body.appendChild(el('div',{class:'q-instr muted small'},['Soal '+(RUN.index+1)+'/'+RUN.items.length]));
+  root.appendChild(body);
+
+  const q = RUN.items[RUN.index];
+  const snap = buildSnapshot(RUN.subtestKey, q);
+  renderQuestionBody(body, snap, { mode:'live', onSelect:(val)=>answerCurrent(val, snap) });
+
+  root.appendChild(ledgerStrip());
+}
+function ledgerStrip(){
+  const strip = el('div',{class:'ledger-strip'});
+  RUN.items.forEach((q,i)=>{
+    const state = i<RUN.index ? 'done' : (i===RUN.index ? 'current' : 'todo');
+    strip.appendChild(el('span',{class:'lcell lcell-'+state},[String(i+1)]));
+  });
+  return strip;
+}
+
+/* ---------------- RESULTS ---------------- */
+function renderResults(){
+  root.innerHTML='';
+  const st = P.SUBTESTS[RUN.subtestKey];
+  const tier = P.TIERS.find(t=>t.key===RUN.tierKey);
+  const total = RUN.answers.length;
+  const correct = RUN.answers.filter(a=>a.correctFlag).length;
+  const answeredTimes = RUN.answers.filter(a=>a.timeMs!=null).map(a=>a.timeMs);
+  const totalTimeMs = answeredTimes.reduce((a,b)=>a+b,0);
+  const avgTimeMs = answeredTimes.length? Math.round(totalTimeMs/answeredTimes.length) : 0;
+  const acc = Math.round(100*correct/total);
+
+  const beforeMastery = P.masteryOf(statsFor(RUN.subtestKey, RUN.tierKey));
+  TRACK = P.recordAttempt(TRACK, RUN.subtestKey, RUN.tierKey, correct, total, totalTimeMs);
+  const afterMastery = P.masteryOf(statsFor(RUN.subtestKey, RUN.tierKey));
+  P.saveTrack(TRACK); // fire-and-forget, doesn't block rendering
+
+  const head = el('section',{class:'results-head card'});
+  head.appendChild(el('div',{class:'ticket-eyebrow'},[st.label.toUpperCase()+' · '+tier.label.toUpperCase()+' · HASIL SIMULASI']));
+  head.appendChild(el('div',{class:'score-row'},[
+    el('div',{class:'score-big'},[correct+' / '+total]),
+    el('div',{class:'score-meta', html:
+      '<div>Akurasi: <b>'+acc+'%</b></div>'+
+      '<div>Waktu terpakai: <b>'+fmtTime(totalTimeMs)+'</b> dari '+fmtMinutes(st.minutes)+'</div>'+
+      '<div>Rata-rata / soal: <b>'+fmtSec(avgTimeMs)+'</b></div>'
+    })
+  ]));
+  head.appendChild(el('div',{class:'mastery-change'},
+    beforeMastery.label!==afterMastery.label
+      ? ['Status berubah: ', stampNode(beforeMastery), ' → ', stampNode(afterMastery)]
+      : ['Status saat ini: ', stampNode(afterMastery)]
+  ));
+  head.appendChild(el('div',{class:'btn-row'},[
+    el('button',{class:'btn-primary', onclick:()=>startInstructions(RUN.subtestKey, RUN.tierKey)},['Ulangi Level Ini']),
+    el('button',{class:'btn-ghost', onclick: renderHome},['Kembali ke Dashboard'])
+  ]));
+  root.appendChild(head);
+
+  const recap = el('section',{class:'recap card'});
+  recap.appendChild(el('h3',{},['Buku Rekap — Soal, Jawabanmu & Pembahasan']));
+  RUN.answers.forEach((a,i)=>{
+    const qs = a.qSnapshot;
+    const rowWrap = el('div',{class:'recap-item'});
+    const top = el('div',{class:'recap-top', onclick:()=> rowWrap.classList.toggle('open')},[
+      el('span',{class:'recap-no'},[String(i+1)]),
+      el('span',{class:'recap-flag '+(a.correctFlag?'flag-good':'flag-bad')},[a.correctFlag?'BENAR':'SALAH']),
+      el('span',{class:'recap-repr'},[shortRepr(qs)]),
+      el('span',{class:'recap-time muted small'},[a.timeMs!=null? fmtSec(a.timeMs) : '—']),
+      el('span',{class:'recap-caret'},['▾'])
+    ]);
+    const detail = el('div',{class:'recap-detail'});
+    if(a.timedOut) detail.appendChild(el('div',{class:'trick-box small'},['Waktu habis sebelum soal ini sempat dijawab.']));
+    renderQuestionBody(detail, qs, { mode:'review', selected:a.selected });
+    detail.appendChild(el('div',{class:'recap-expl', html: qs.explanation||''}));
+    if(qs.trick) detail.appendChild(el('div',{class:'trick-box small'},[el('b',{},['Trik cepat: ']), qs.trick]));
+    rowWrap.appendChild(top); rowWrap.appendChild(detail);
+    recap.appendChild(rowWrap);
+  });
+  root.appendChild(recap);
+}
+
+init();
+})();
+
+</script>
+</body>
+</html>
